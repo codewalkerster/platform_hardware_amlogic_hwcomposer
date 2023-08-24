@@ -173,7 +173,7 @@ hwc2_error_t Hwc2Layer::setBuffer(buffer_handle_t buffer, int32_t acquireFence) 
     * For UVM video buffer, set UVM flags.
     * As the buffer will was update already
     */
-    dettachUvmBuffer();
+    detachUvmBuffer();
     if (preType == DRM_FB_VIDEO_UVM_DMA && mPreUvmBufferFd >= 0) {
         collectUvmBuffer(mPreUvmBufferFd, getPrevReleaseFence());
         mPreUvmBufferFd = -1;
@@ -417,22 +417,22 @@ void Hwc2Layer::clearUpdateFlag() {
 
 /* ========================== Uvm Attach =================================== */
 int32_t Hwc2Layer::attachUvmBuffer(const int bufferFd) {
-    if (!mUvmDettach)
-        mUvmDettach = std::make_shared<UvmDettach>(mId);
+    if (!mUvmDetach)
+        mUvmDetach = std::make_shared<UvmDetach>(mId);
 
-    return mUvmDettach->attachUvmBuffer(bufferFd);
+    return mUvmDetach->attachUvmBuffer(bufferFd);
 }
 
-int32_t Hwc2Layer::dettachUvmBuffer() {
-    if (mUvmDettach)
-        return mUvmDettach->dettachUvmBuffer();
+int32_t Hwc2Layer::detachUvmBuffer() {
+    if (mUvmDetach)
+        return mUvmDetach->detachUvmBuffer();
 
     return 0;
 }
 
 int32_t Hwc2Layer::collectUvmBuffer(const int fd, const int fence) {
-    if (mUvmDettach)
-        return mUvmDettach->collectUvmBuffer(fd, fence);
+    if (mUvmDetach)
+        return mUvmDetach->collectUvmBuffer(fd, fence);
 
     return 0;
 }
@@ -442,8 +442,8 @@ int32_t Hwc2Layer::releaseUvmResourceLock() {
         close(mPreUvmBufferFd);
     mPreUvmBufferFd = -1;
 
-    if (mUvmDettach)
-        return mUvmDettach->releaseUvmResource();
+    if (mUvmDetach)
+        return mUvmDetach->releaseUvmResource();
 
     return 0;
 }
@@ -615,7 +615,7 @@ int32_t Hwc2Layer::releaseVtBuffer() {
         return -EINVAL;
     }
 
-    dettachUvmBuffer();
+    detachUvmBuffer();
 
     if (mVtRefreshed) {
         mVtRefreshed = false;
@@ -1224,11 +1224,11 @@ bool Hwc2Layer::getVideoInfoFromUVM(int fd) {
     struct uvm_fd_info videoInfo;
     String8 layerInfo;
 
-    if (fd >= 0 && mUvmDettach) {
+    if (fd >= 0 && mUvmDetach) {
         memset(&videoInfo, 0, sizeof(videoInfo));
         videoInfo.fd = fd;
 
-        mUvmDettach->getVideoInfo(videoInfo);
+        mUvmDetach->getVideoInfo(videoInfo);
 
         mAMVideoType = videoInfo.type;
         mVideoDecTimestamp = (uint32_t)(videoInfo.timestamp / 1e9);
