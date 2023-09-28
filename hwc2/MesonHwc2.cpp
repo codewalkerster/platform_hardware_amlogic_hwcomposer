@@ -872,8 +872,8 @@ uint32_t MesonHwc2::getDisplayRequest() {
                 HwcConfig::getFramebufferSize(0, width, height);
                 DEFAULT_CROD(width, height);
                 bVal = false;
-                if (sys_get_string_prop("persist.vendor.hwc.keystone", val) > 0 &&
-                    strcmp(val, "0") != 0 && strcmp(val, keystoneProp) != 0) {
+                if ((sys_get_string_prop("persist.vendor.hwc.keystone", val) > 0 &&
+                    strcmp(val, "0") != 0 && strcmp(val, keystoneProp) != 0) || strcmp(mKeystoneConfigs.c_str(), "0") != 0) {
                     bVal = true;
                 }
                 if (mKeyStoneMode != bVal) {
@@ -885,8 +885,8 @@ uint32_t MesonHwc2::getDisplayRequest() {
             }
         } else {
             bVal = false;
-            if (sys_get_string_prop("persist.vendor.hwc.keystone", val) > 0 &&
-                strcmp(val, "0") != 0) {
+            if ((sys_get_string_prop("persist.vendor.hwc.keystone", val) > 0 &&
+                strcmp(val, "0") != 0) || strcmp(mKeystoneConfigs.c_str(), "0") != 0) {
                 bVal = true;
             }
             if (mKeyStoneMode != bVal) {
@@ -1204,5 +1204,18 @@ uint32_t MesonHwc2::getVirtualDisplayId() {
 void MesonHwc2::freeVirtualDisplayId(uint32_t id) {
     mVirtualDisplayIds &= ~(1 << id);
     MESON_LOGD("freeVirtualDisplayId (%d) to (%x)", id, mVirtualDisplayIds);
+}
+
+bool MesonHwc2::setKeystoneCorrection(std::string params) {
+    mKeystoneConfigs = params;
+    GET_HWC_DISPLAY(0);
+    hwcDisplay->setKeystoneCorrection(params);
+    return true;
+}
+
+bool MesonHwc2::setReverseMode(int type) {
+    GET_HWC_DISPLAY(0);
+    hwcDisplay->setReverseMode(type);
+    return true;
 }
 
