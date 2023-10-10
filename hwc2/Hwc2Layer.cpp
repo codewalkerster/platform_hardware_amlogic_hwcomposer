@@ -61,6 +61,7 @@ Hwc2Layer::Hwc2Layer(uint32_t dispId) : DrmFramebuffer(){
     memset(&mDamageRegion, 0, sizeof(mDamageRegion));
     memset(&mBackupDisplayFrame, 0, sizeof(mBackupDisplayFrame));
     memset(&mCalibrateInfo, 0, sizeof(mCalibrateInfo));
+    mNeedAskRefresh = false;
 }
 
 Hwc2Layer::~Hwc2Layer() {
@@ -685,6 +686,14 @@ int32_t Hwc2Layer::releaseVtBuffer() {
     return ret;
 }
 
+void Hwc2Layer::askVtRefresh(bool flag) {
+    VideoTunnelDev::getInstance().askRefresh(mTunnelId, flag);
+}
+
+void Hwc2Layer::setNeedAskRefresh(bool needRefresh) {
+    mNeedAskRefresh = needRefresh;
+}
+
 /* layer will destroy or layer FbType changed to non-videotunnel */
 int32_t Hwc2Layer::releaseVtResource() {
     /* need hold mutex of contentListener */
@@ -718,6 +727,11 @@ int32_t Hwc2Layer::releaseVtResourceLocked(bool needDisconnect,
         MESON_LOGV("[%s] [%d] [%" PRIu64 "]", __func__, mDisplayId, mId);
         if (!mVtConsumer)
             return 0;
+
+        if (needDisconnect && mNeedAskRefresh ) {
+            askVtRefresh(true);
+            mNeedAskRefresh = false;
+        }
 
         if (!needKeepLastFrame || needDisconnect) {
             if (mPreVtBufferFd >= 0) {
@@ -766,9 +780,6 @@ int32_t Hwc2Layer::releaseVtResourceLocked(bool needDisconnect,
 void Hwc2Layer::handleDisplayDisconnect(bool connect) {
     if (connect) {
         registerConsumer();
-    } else {
-        std::lock_guard<std::mutex> lock(mMutex);
-        releaseVtResourceLocked(false);
     }
 }
 
@@ -872,6 +883,7 @@ int32_t Hwc2Layer::registerConsumer() {
         MESON_LOGE("[%s] [%d] [%" PRIu64 "] connect to instance %d failed",
             __func__, mDisplayId, mId, mTunnelId);
 
+    askVtRefresh(false);
     return ret;
 }
 
