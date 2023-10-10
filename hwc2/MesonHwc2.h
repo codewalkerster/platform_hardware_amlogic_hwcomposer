@@ -221,7 +221,7 @@ protected:
     /* meson display */
     drm_rect_wh_t mViewPort;
     bool mChangedViewPort;
-
+    bool mAidlCilentIsSF;
     std::shared_ptr<IModePolicy> mModePolicy;
 };
 
