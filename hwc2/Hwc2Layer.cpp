@@ -1014,6 +1014,9 @@ void Hwc2Layer::setVtSourceCrop(drm_rect_t & rect) {
     mVtSourceCrop.top    = rect.top;
     mVtSourceCrop.right  = rect.right;
     mVtSourceCrop.bottom = rect.bottom;
+
+    mUpdated = true;
+    vtRefresh();
 }
 
 void Hwc2Layer::setVtDisplayFrame(drm_rect_t & rect) {
@@ -1038,6 +1041,9 @@ void Hwc2Layer::setVtDisplayFrame(drm_rect_t & rect) {
 
     if (mCalibrateInfo.framebuffer_w > 0)
         adjustDisplayFrameLocked();
+
+    mUpdated = true;
+    vtRefresh();
 }
 
 void Hwc2Layer::adjustDisplayFrame(display_zoom_info_t & calibrateInfo) {
