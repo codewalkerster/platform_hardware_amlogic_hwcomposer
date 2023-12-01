@@ -1287,9 +1287,11 @@ hwc2_error_t Hwc2Display::validateDisplay(uint32_t* outNumTypes,
 
     } else {
         /* skip Composition */
-        std::shared_ptr<IComposer> clientComposer =
-            mComposers.find(MESON_CLIENT_COMPOSER)->second;
-        clientComposer->prepare();
+        auto composerIt = mComposers.find(MESON_CLIENT_COMPOSER);
+        if (composerIt != mComposers.end()) {
+            std::shared_ptr<IComposer> clientComposer = composerIt->second;
+            clientComposer->prepare();
+        }
     }
     /*collect changed dispplay, layer, composition.*/
     ret = collectCompositionRequest(outNumTypes, outNumRequests);
@@ -1386,14 +1388,16 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
     }
 
     /*collect client clear layer.*/
-    std::shared_ptr<IComposer> clientComposer =
-        mComposers.find(MESON_CLIENT_COMPOSER)->second;
-    std::vector<std::shared_ptr<DrmFramebuffer>> overlayLayers;
-    if (0 == clientComposer->getOverlyFbs(overlayLayers) ) {
-        auto it = overlayLayers.begin();
-        for (; it != overlayLayers.end(); ++it) {
-            layer = (Hwc2Layer*)(it->get());
-            mOverlayLayers.push_back(layer->getUniqueId());
+    auto composerIt = mComposers.find(MESON_CLIENT_COMPOSER);
+    if (composerIt != mComposers.end()) {
+        std::shared_ptr<IComposer> clientComposer =composerIt->second;
+        std::vector<std::shared_ptr<DrmFramebuffer>> overlayLayers;
+        if (0 == clientComposer->getOverlyFbs(overlayLayers) ) {
+            auto it = overlayLayers.begin();
+            for (; it != overlayLayers.end(); ++it) {
+                layer = (Hwc2Layer*)(it->get());
+                mOverlayLayers.push_back(layer->getUniqueId());
+            }
         }
     }
 
