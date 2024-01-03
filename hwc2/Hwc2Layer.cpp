@@ -242,6 +242,7 @@ hwc2_error_t Hwc2Layer::setBuffer(buffer_handle_t buffer, int32_t acquireFence) 
 hwc2_error_t Hwc2Layer::setSidebandStream(const native_handle_t* stream,
         std::shared_ptr<VtDisplayObserver> observer) {
     ATRACE_CALL();
+    VtInstanceMgr::getInstance().lockInstancesMutex();
     std::lock_guard<std::mutex> lock(mMutex);
     MESON_LOGV("[%s] [%" PRIu64 "]", __func__, mId);
     clearBufferInfo();
@@ -289,6 +290,7 @@ hwc2_error_t Hwc2Layer::setSidebandStream(const native_handle_t* stream,
             mFbType = DRM_FB_VIDEO_SIDEBAND;
         }
     }
+    VtInstanceMgr::getInstance().unlockInstancesMutex();
 
     /* fbtype is not tunnel sideband */
     if (mFbType != DRM_FB_VIDEO_TUNNEL_SIDEBAND)
@@ -704,22 +706,17 @@ void Hwc2Layer::setNeedAskRefresh(bool needRefresh) {
 
 /* layer will destroy or layer FbType changed to non-videotunnel */
 int32_t Hwc2Layer::releaseVtResource() {
-    /* need hold mutex of contentListener */
-    VtContentChangeListener* listener = nullptr;
-    if (mContentListener) {
-        listener = static_cast<VtContentChangeListener*> (mContentListener.get());
-        listener->mMutex.lock();
-    }
+    int32_t ret = 0;
 
+    VtInstanceMgr::getInstance().lockInstancesMutex();
     std::lock_guard<std::mutex> lock(mMutex);
-    int32_t ret = releaseVtResourceLocked();
-
-    if (listener)
-        listener->mMutex.unlock();
+    ret = releaseVtResourceLocked();
+    VtInstanceMgr::getInstance().unlockInstancesMutex();
 
     return ret;
 }
 
+/* need hold VtInstanceMgr::mInstanceMutex and Hwc2Layer::mMutex before call */
 int32_t Hwc2Layer::releaseVtResourceLocked() {
     return releaseVtResourceLocked(true);
 }
@@ -787,7 +784,9 @@ int32_t Hwc2Layer::releaseVtResourceLocked(bool needDisconnect,
 
 void Hwc2Layer::handleDisplayDisconnect(bool connect) {
     if (connect) {
+        VtInstanceMgr::getInstance().lockInstancesMutex();
         registerConsumer();
+        VtInstanceMgr::getInstance().unlockInstancesMutex();
     }
 }
 
@@ -874,8 +873,7 @@ int32_t Hwc2Layer::registerConsumer() {
 
     if (!mContentListener)
         mContentListener = std::make_shared<VtContentChangeListener>(this);
-    else
-        mContentListener->onSetupClient(this);
+
     ret = mVtConsumer->setVtContentListener(mContentListener);
     if (ret < 0) {
         MESON_LOGE("[%s] [%d] [%" PRIu64 "] set %d content listener failed ",
@@ -883,7 +881,7 @@ int32_t Hwc2Layer::registerConsumer() {
         return ret;
     }
 
-    ret = VtInstanceMgr::getInstance().connectInstance(mTunnelId, mVtConsumer);
+    ret = VtInstanceMgr::getInstance().connectInstanceLocked(mTunnelId, mVtConsumer);
     if (ret >= 0)
         MESON_LOGD("[%s] [%d] [%" PRIu64 "] connect to instance %d seccussed",
             __func__, mDisplayId, mId, mTunnelId);
@@ -895,6 +893,7 @@ int32_t Hwc2Layer::registerConsumer() {
     return ret;
 }
 
+/* need lock VtInstanceMgr.mInstanceMutex before */
 int32_t Hwc2Layer::unregisterConsumer() {
     ATRACE_CALL();
     int32_t ret = -1;
@@ -914,12 +913,9 @@ int32_t Hwc2Layer::unregisterConsumer() {
     memset(&mVtSourceCrop, 0, sizeof(mVtSourceCrop));
     memset(&mVtDisplayFrame, 0, sizeof(mVtDisplayFrame));
 
-    ret = VtInstanceMgr::getInstance().disconnectInstance(mTunnelId, mVtConsumer);
+    ret = VtInstanceMgr::getInstance().disconnectInstanceLocked(mTunnelId, mVtConsumer);
     mVtConsumer.reset();
     mVtConsumer = nullptr;
-    if (mContentListener) {
-        mContentListener-> onDisconnectedLocked();
-    }
 
     mTunnelId = -1;
 
@@ -1268,7 +1264,6 @@ bool Hwc2Layer::getVideoInfoFromUVM(int fd) {
 /* ================ content change listener for videotunnel ================ */
 int32_t Hwc2Layer::VtContentChangeListener::onFrameAvailable(
         std::vector<std::shared_ptr<VtBufferItem>> & items) {
-    std::lock_guard<std::mutex> lock(mMutex);
     int32_t ret = -1;
     if (mLayer)
         ret = mLayer->onVtFrameAvailable(items);
@@ -1279,7 +1274,6 @@ int32_t Hwc2Layer::VtContentChangeListener::onFrameAvailable(
 }
 
 void Hwc2Layer::VtContentChangeListener::onVideoStatus(vt_video_status_t status) {
-    std::lock_guard<std::mutex> lock(mMutex);
     if (mLayer)
         mLayer->onVtVideoStatus(status);
     else
@@ -1288,7 +1282,6 @@ void Hwc2Layer::VtContentChangeListener::onVideoStatus(vt_video_status_t status)
 }
 
 void Hwc2Layer::VtContentChangeListener::onVideoGameMode(int data) {
-    std::lock_guard<std::mutex> lock(mMutex);
     if (mLayer)
         mLayer->onVtVideoGameMode(data);
     else
@@ -1297,7 +1290,6 @@ void Hwc2Layer::VtContentChangeListener::onVideoGameMode(int data) {
 }
 
 int32_t Hwc2Layer::VtContentChangeListener::getVideoStatus() {
-    std::lock_guard<std::mutex> lock(mMutex);
     int32_t ret = -1;
     if (mLayer)
         ret = mLayer->getVtVideoStatus();
@@ -1309,7 +1301,6 @@ int32_t Hwc2Layer::VtContentChangeListener::getVideoStatus() {
 }
 
 void Hwc2Layer::VtContentChangeListener::onSourceCropChange(vt_rect & crop) {
-    std::lock_guard<std::mutex> lock(mMutex);
     drm_rect_t rect;
     rect.left   = crop.left;
     rect.top    = crop.top;
@@ -1339,7 +1330,6 @@ void Hwc2Layer::VtContentChangeListener::onDisplayFrameChange(vt_rect & frame) {
 
 
 void Hwc2Layer::VtContentChangeListener::onNeedShowTempBuffer(vt_video_color_t colorType) {
-    std::lock_guard<std::mutex> lock(mMutex);
     if (mLayer)
         mLayer->onNeedShowTempBuffer(colorType);
     else
@@ -1349,20 +1339,10 @@ void Hwc2Layer::VtContentChangeListener::onNeedShowTempBuffer(vt_video_color_t c
 
 void Hwc2Layer::VtContentChangeListener::onNeedShowTempBufferWithStatus(
         vt_video_color_t colorType, vt_video_status_t status) {
-    std::lock_guard<std::mutex> lock(mMutex);
     if (mLayer)
         mLayer->onNeedShowTempBufferWithStatus(colorType, status);
     else
          MESON_LOGE("Hwc2Layer::VtContentChangeListener::%s mLayer is NULL",
                  __func__);
-}
-
-void Hwc2Layer::VtContentChangeListener::onDisconnectedLocked() {
-    mLayer = nullptr;
-}
-
-void Hwc2Layer::VtContentChangeListener::onSetupClient(void* layer) {
-    if (!mLayer)
-        mLayer = (Hwc2Layer *)layer;
 }
 /* ========================================================================= */
