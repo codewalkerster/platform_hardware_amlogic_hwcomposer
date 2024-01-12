@@ -94,7 +94,7 @@ Error ComposerHandleImporter::importBuffer(const native_handle_t* rawHandle,
         return Error::NONE;
     }
 
-    const native_handle_t* bufferHandle;
+    const native_handle_t* bufferHandle = nullptr;
     if (mMapper2) {
         mapper::V2_0::Error error;
         mMapper2->importBuffer(rawHandle, [&](const auto& tmpError, const auto& tmpBufferHandle) {

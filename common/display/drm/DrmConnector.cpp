@@ -105,6 +105,7 @@ int32_t DrmConnector::loadProperties(drmModeConnectorPtr p __unused) {
         drmModePropertyPtr prop = drmModeGetProperty(mDrmFd, props->props[i]);
         if (strcmp(prop->name, DRM_CONNECTOR_PROP_CRTCID) == 0 && mCrtcId.get()) {
             //TODO: WA for only set crtcid prop at initialization
+            drmModeFreeProperty(prop);
             continue;
         }
         for (int j = 0; j < connectorPropsNum; j++) {
