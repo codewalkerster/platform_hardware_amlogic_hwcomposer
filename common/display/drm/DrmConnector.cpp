@@ -16,6 +16,7 @@
 #include <inttypes.h>
 #include <limits>
 #include <hardware/hwcomposer2.h>
+#include <HwcConfig.h>
 
 #include <xf86drm.h>
 #include <string.h>
@@ -264,7 +265,7 @@ int32_t DrmConnector::loadVrrModeGroups() {
 int32_t DrmConnector::groupDisplayModes() {
     /* no need to regenerate groupId if without QMS/VRR support */
     if (!isTvType()) {
-        if (!(mSupportVrr = supportVrr())) {
+        if (!(mSupportVrr = supportVrr()) || !HwcConfig::seamlessSwitchEnabled()) {
             return 0;
         }
     }
