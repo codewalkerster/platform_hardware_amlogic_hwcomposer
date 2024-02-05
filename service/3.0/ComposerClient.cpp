@@ -829,22 +829,22 @@ namespace {
 
 #define DISPATCH_LAYER_COMMAND(layerCmd, display, layer, field, funcName)         \
     do {                                                                          \
-      if (layerCmd.field) {                                                       \
+      if ((layerCmd).field) {                                                       \
           ComposerClient::executeLayerCommandSetLayer##funcName(display, layer,   \
-                                                                *layerCmd.field); \
+                                                                *(layerCmd.field)); \
       }                                                                           \
     } while (0)
 
 #define DISPATCH_DISPLAY_COMMAND(displayCmd, display, field, funcName)   \
     do {                                                                 \
-      if (displayCmd.field) {                                            \
-          executeDisplayCommand##funcName(display, *displayCmd.field);   \
+      if ((displayCmd).field) {                                            \
+          executeDisplayCommand##funcName((display), *(displayCmd.field));   \
       }                                                                  \
     } while (0)
 
 #define DISPATCH_DISPLAY_BOOL_COMMAND(displayCmd, display, field, funcName) \
     do {                                                                    \
-      if (displayCmd.field) {                                               \
+      if ((displayCmd).field) {                                               \
           executeDisplayCommand##funcName(display);                         \
       }                                                                     \
     } while (0)
@@ -852,8 +852,8 @@ namespace {
 #define DISPATCH_DISPLAY_BOOL_COMMAND_AND_DATA(displayCmd, display, field, \
                                                  data, funcName)           \
     do {                                                                   \
-      if (displayCmd.field) {                                              \
-          executeDisplayCommand##funcName(display, displayCmd.data);       \
+      if ((displayCmd).field) {                                              \
+          executeDisplayCommand##funcName((display), (displayCmd).data);       \
       }                                                                    \
     } while (0)
 

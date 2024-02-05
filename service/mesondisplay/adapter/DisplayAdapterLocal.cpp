@@ -126,7 +126,7 @@ DisplayAdapterLocal::DisplayAdapterLocal() {
     }
 
 #define DA_DEFINE(ID, INIT_VAL, UPDATE_FUN)  \
-    display_attrs[DA_##ID] = { .name = DISPLAY_##ID, .attr_id = DA_##ID, .current_value = INIT_VAL, .new_value = INIT_VAL, .status_flags = 0, .update_fun = UPDATE_FUN, .sysfs_node = NULL, .is_read_only = false, .is_write_only = false }
+    display_attrs[DA_##ID] = { .name = DISPLAY_##ID, .attr_id = DA_##ID, .current_value = (INIT_VAL), .new_value = (INIT_VAL), .status_flags = 0, .update_fun = (UPDATE_FUN), .sysfs_node = NULL, .is_read_only = false, .is_write_only = false }
 
     DA_DEFINE(DOLBY_VISION_CAP, "0", update_sys_node);
     DA_DEFINE(DOLBY_VISION_CAP2, "0", update_sys_node);

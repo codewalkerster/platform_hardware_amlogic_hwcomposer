@@ -39,7 +39,7 @@
 #define DEFAULT_REFRESH_RATE 60
 
 #define IS_FB_COMPOSED(fb) \
-    (fb->mZorder >= mMinComposerZorder && fb->mZorder <= mMaxComposerZorder)
+    ((fb)->mZorder >= mMinComposerZorder && (fb)->mZorder <= mMaxComposerZorder)
 
 /* Constructor function */
 MultiplanesWithHRComposition::MultiplanesWithHRComposition() {

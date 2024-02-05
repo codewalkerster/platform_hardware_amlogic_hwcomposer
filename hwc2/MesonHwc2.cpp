@@ -38,7 +38,7 @@
 #define CHECK_DISPLAY_VALID(display)    \
     if (isDisplayValid(display) == false) { \
         MESON_LOGE("(%s) met invalid display id (%d)", \
-            __func__, (int)display); \
+            __func__, (int)(display)); \
         return HWC2_ERROR_BAD_DISPLAY; \
     }
 
@@ -50,15 +50,15 @@
         hwcDisplay = it->second; \
     }  else {\
         MESON_LOGE("(%s) met invalid display id (%d)",\
-            __func__, (int)display); \
+            __func__, (int)(display)); \
         return HWC2_ERROR_BAD_DISPLAY; \
     }
 
 #define GET_HWC_LAYER(display, id)    \
-    std::shared_ptr<Hwc2Layer> hwcLayer = display->getLayerById(id); \
+    std::shared_ptr<Hwc2Layer> hwcLayer = (display)->getLayerById(id); \
     if (hwcLayer.get() == NULL) { \
         MESON_LOGE("(%s) met invalid layer id (%d) in display (%p)",\
-            __func__, (int)id, display.get()); \
+            __func__, (int)(id), (display).get()); \
         return HWC2_ERROR_BAD_LAYER; \
     }
 
