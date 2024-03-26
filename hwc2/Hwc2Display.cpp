@@ -2149,6 +2149,7 @@ hwc2_error_t Hwc2Display::setHdrConversionStrategy(bool passThrough, uint32_t nu
 
     auto outHdrConversionType = -1;
     uint32_t userHdrType = 0;
+    int32_t ret = -1;
     /* DV enable support DV and HDR10
      * DV disable support HDR10 and HLG */
     if (!passThrough && preferredHdrOutputType) {
@@ -2178,11 +2179,17 @@ hwc2_error_t Hwc2Display::setHdrConversionStrategy(bool passThrough, uint32_t nu
 
         if (outHdrConversionType == -1) {
             if (mModePolicy) {
-                mModePolicy->setHdrConversionPolicy(passThrough, outHdrConversionType);
+                std::unique_lock<std::mutex> stateLock(mStateLock);
+                mModeMgr->resetTags(false);
+                ret = mModePolicy->setHdrConversionPolicy(passThrough, outHdrConversionType);
+                if (ret == 0) {
+                    mStateCondition.wait_for(stateLock, std::chrono::seconds(1));
+                }
+                mModeMgr->resetTags(true);
             } else {
                 MESON_LOGD("ModePolicy is NULL");
             }
-            return HWC2_ERROR_UNSUPPORTED;
+            return HWC2_ERROR_NONE;
         }
         *preferredHdrOutputType = outHdrConversionType;
     } else {
@@ -2194,7 +2201,6 @@ hwc2_error_t Hwc2Display::setHdrConversionStrategy(bool passThrough, uint32_t nu
         outHdrConversionType = mModePolicy->getPreferredHdrConversionType();
     }
 
-    int32_t ret = -1;
     if (mModePolicy) {
         std::unique_lock<std::mutex> stateLock(mStateLock);
         mModeMgr->resetTags(false);
