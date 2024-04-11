@@ -157,6 +157,7 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
             // default add frac refresh rate config, like 23.976hz, 29.97hz...
             if (modeInfo.refreshRate == REFRESH_24kHZ
                     || modeInfo.refreshRate == REFRESH_30kHZ
+                    || modeInfo.refreshRate == REFRESH_48kHZ
                     || modeInfo.refreshRate == REFRESH_60kHZ
                     || modeInfo.refreshRate == REFRESH_120kHZ
                     || modeInfo.refreshRate == REFRESH_240kHZ) {
