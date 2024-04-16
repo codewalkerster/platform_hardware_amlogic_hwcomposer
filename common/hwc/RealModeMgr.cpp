@@ -600,9 +600,9 @@ int32_t RealModeMgr::setBootConfig(int32_t config) {
             sc_setBootDisplayConfig(HWC_DISPLAY_PRIMARY, dispmode);
 
             if (fabs(cfg.refreshRate - floor(cfg.refreshRate)) > 1e-2) {
-                meson_mode_set_ubootenv(UBOOTENV_FRAC_RATE_POLICY, "1");
+                sc_set_bootenv(UBOOTENV_FRAC_RATE_POLICY, "1");
             } else {
-                meson_mode_set_ubootenv(UBOOTENV_FRAC_RATE_POLICY, "0");
+                sc_set_bootenv(UBOOTENV_FRAC_RATE_POLICY, "0");
             }
         }
     } else {

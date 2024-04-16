@@ -2834,7 +2834,7 @@ void Hwc2Display::setReverseMode(int type) {
         }
     }
 
-    meson_mode_set_ubootenv(REVERSE_CTL, "1");
+    sc_set_bootenv(REVERSE_CTL, "1");
     std::string uboot_osd_reverse;
     std::string uboot_video_reverse;
 
@@ -2842,23 +2842,23 @@ void Hwc2Display::setReverseMode(int type) {
     sysfs_set_string(AML_MEDIA_REVERSE, "0");
     switch (type) {
         case DRM_REVERSE_MODE_NONE:
-            meson_mode_set_ubootenv(UBOOT_OSD_REVERSE, "0");
-            meson_mode_set_ubootenv(UBOOT_VIDEO_REVERSE, "0");
+            sc_set_bootenv(UBOOT_OSD_REVERSE, "0");
+            sc_set_bootenv(UBOOT_VIDEO_REVERSE, "0");
             sysfs_set_string(VIDEO_REVERSE, "0");
             break;
         case DRM_REVERSE_MODE_X:
-            meson_mode_set_ubootenv(UBOOT_OSD_REVERSE, "osd0,x_rev");
-            meson_mode_set_ubootenv(UBOOT_VIDEO_REVERSE, "2");
+            sc_set_bootenv(UBOOT_OSD_REVERSE, "osd0,x_rev");
+            sc_set_bootenv(UBOOT_VIDEO_REVERSE, "2");
             sysfs_set_string(VIDEO_REVERSE, "1");
             break;
         case DRM_REVERSE_MODE_Y:
-            meson_mode_set_ubootenv(UBOOT_OSD_REVERSE, "osd0,y_rev");
-            meson_mode_set_ubootenv(UBOOT_VIDEO_REVERSE, "3");
+            sc_set_bootenv(UBOOT_OSD_REVERSE, "osd0,y_rev");
+            sc_set_bootenv(UBOOT_VIDEO_REVERSE, "3");
             sysfs_set_string(VIDEO_REVERSE, "2");
             break;
         case DRM_REVERSE_MODE_ALL:
-            meson_mode_set_ubootenv(UBOOT_OSD_REVERSE, "osd0,true");
-            meson_mode_set_ubootenv(UBOOT_VIDEO_REVERSE, "1");
+            sc_set_bootenv(UBOOT_OSD_REVERSE, "osd0,true");
+            sc_set_bootenv(UBOOT_VIDEO_REVERSE, "1");
             sysfs_set_string(AML_MEDIA_REVERSE, "1");
             break;
         default:

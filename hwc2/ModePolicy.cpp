@@ -16,7 +16,7 @@
 #include "ModePolicy.h"
 #include "mode_ubootenv.h"
 #include "misc.h"
-//#include <systemcontrol.h>
+#include <systemcontrol.h>
 #include "HwcConfig.h"
 
 #define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"//testing if tv support this displaymode and  deepcolor combination, then if cat result is 1: support, 0: not
@@ -180,22 +180,25 @@ ModePolicy::~ModePolicy() {
 }
 
 bool ModePolicy::getBootEnv(const char *key, char *value) {
-    const char* p_value =  meson_mode_get_ubootenv(key);
-    MESON_LOGD("get key:%s value:%s", key, p_value);
-
-    if (p_value) {
-        strcpy(value, p_value);
+    std::string tmpValue;
+    if (!sc_read_bootenv(key, tmpValue)) {
+        strcpy(value, tmpValue.c_str());
+        MESON_LOGD("get key:%s value:%s", key, value);
         return true;
+    } else {
+        return false;
     }
-
-    return false;
 }
 
 int ModePolicy::getBootenvInt(const char* key, int defaultVal) {
     int value = defaultVal;
-    const char* p_value =  meson_mode_get_ubootenv(key);
-    if (p_value) {
-        value = strtol(p_value, NULL, 10);
+
+    std::string tmpValue;
+    if (!sc_read_bootenv(key, tmpValue)) {
+        const char* p_value = tmpValue.c_str();
+        if (p_value) {
+            value = strtol(p_value, NULL, 10);
+        }
     }
     return value;
 }
@@ -203,7 +206,7 @@ int ModePolicy::getBootenvInt(const char* key, int defaultVal) {
 void ModePolicy::setBootEnv(const char* key, const char* value) {
     MESON_LOGD("set key:%s value:%s", key, value);
 
-    meson_mode_set_ubootenv(key, value);
+    sc_set_bootenv(key, value);
 }
 
 

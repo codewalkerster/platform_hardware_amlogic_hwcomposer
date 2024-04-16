@@ -76,13 +76,16 @@ uint32_t HwcConfig::getConnectorType(int disp) {
     char strval[PROP_VALUE_LEN_MAX];
     const char * connectorstr = NULL;
     bool isDrmBackend = false;
+    std::string tmpConnectorstr;
 
     if (access("/dev/dri/card0", R_OK | W_OK) == 0)
         isDrmBackend = true;
 
     if (disp == 0) {
         if (isDrmBackend) {
-            connectorstr = meson_mode_get_ubootenv(UBOOTENV_PRIMARY_CONNECTOR_TYPE);
+            if (!sc_read_bootenv(UBOOTENV_PRIMARY_CONNECTOR_TYPE, tmpConnectorstr)) {
+                connectorstr = tmpConnectorstr.c_str();
+            }
             MESON_LOGD("%s, get %s from uboot env, return %s",
                     __func__, UBOOTENV_PRIMARY_CONNECTOR_TYPE, connectorstr);
         }
@@ -99,7 +102,9 @@ uint32_t HwcConfig::getConnectorType(int disp) {
         }
     } else if (disp == 1) {
         if (isDrmBackend) {
-            connectorstr = meson_mode_get_ubootenv(UBOOTENV_EXTEND_CONNECTOR_TYPE);
+            if (!sc_read_bootenv(UBOOTENV_EXTEND_CONNECTOR_TYPE, tmpConnectorstr)) {
+                connectorstr = tmpConnectorstr.c_str();
+            }
             MESON_LOGD("%s, get %s from uboot env, return %s",
                     __func__, UBOOTENV_PRIMARY_CONNECTOR_TYPE, connectorstr);
         }
@@ -116,7 +121,9 @@ uint32_t HwcConfig::getConnectorType(int disp) {
         }
     } else {
         if (isDrmBackend) {
-            connectorstr = meson_mode_get_ubootenv(UBOOTENV_EXTEND2_CONNECTOR_TYPE);
+            if (!sc_read_bootenv(UBOOTENV_EXTEND2_CONNECTOR_TYPE, tmpConnectorstr)) {
+                connectorstr = tmpConnectorstr.c_str();
+            }
             MESON_LOGD("%s, get %s from uboot env, return %s",
                     __func__, UBOOTENV_PRIMARY_CONNECTOR_TYPE, connectorstr);
         }

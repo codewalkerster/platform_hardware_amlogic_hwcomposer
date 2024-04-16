@@ -240,7 +240,7 @@ int32_t sc_read_bootenv(const char * key, std::string & val) {
         return -EFAULT;
     }
     if (val.empty()) {
-        MESON_LOGE("sc_read_bootenv FAIL.");
+        MESON_LOGD("sc_read_bootenv val is empty");
         return -EFAULT;
     }
 
