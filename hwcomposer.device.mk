@@ -129,7 +129,7 @@ HWC_FILTER_16_9MODE := false
 endif
 
 ifndef HWC_ENABLE_AIDL
-HWC_ENABLE_AIDL := false
+HWC_ENABLE_AIDL := true
 endif
 
 ifndef HWC_ENABLE_VIRTUAL_LAYER
