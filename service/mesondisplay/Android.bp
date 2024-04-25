@@ -126,6 +126,8 @@ cc_library_static {
         "libion",
         "libvideotunnel",
         "libmeson_mode_policy",
+        "vendor.amlogic.hardware.errormonitor@1.0",
+        "liberrormonitorclient",
     ],
 
     static_libs: [
@@ -263,6 +265,8 @@ cc_library_shared {
         "libutils",
         "libbase",
         "libion",
+        "vendor.amlogic.hardware.errormonitor@1.0",
+        "liberrormonitorclient",
     ],
 
     static_libs: [

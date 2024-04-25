@@ -12,10 +12,26 @@
 
 #include <stdlib.h>
 #include <cutils/native_handle.h>
+#include "ErrorMonitorClient.h"
 
 #define PROP_VALUE_LEN_MAX  92
 #define RENDER_TARGET 1
 #define RENDER_TEXTURE 2
+
+enum {
+    AML_SYS_TYPE_STANDBY_NO_OUTPUT  = 0,
+    AML_SYS_TYPE_STANDBY_SHOW_ABNORMAL,
+    AML_SYS_TYPE_STANDBY_BLACKOUT,
+    AML_SYS_TYPE_STANDBY_REBOOT,
+    AML_SYS_TYPE_STANDBY_LONG_TIME
+};
+
+enum {
+    ERROR_MONITOR_DUMP_NONE         = 0,
+    ERROR_MONITOR_DUMP_LOGCAT,
+    ERROR_MONITOR_DUMP_BUGREPORT,
+    ERROR_MONITOR_DUMP_ALL
+};
 
 bool sys_get_bool_prop(const char* prop, bool defVal);
 bool sys_set_valid_mode(const char* path, const char* outputmode);
@@ -37,5 +53,8 @@ int32_t gralloc_unref_dma_buf(native_handle_t * hnd, bool isSidebandBuffer=false
 
 int32_t gralloc_lock_dma_buf(native_handle_t * handle, void** vaddr);
 int32_t gralloc_unlock_dma_buf(native_handle_t * handle);
+
+void notify_error_monitor(int32_t level, int32_t logType,
+    int32_t type, const char* msg);
 
 #endif/*MISC_H*/

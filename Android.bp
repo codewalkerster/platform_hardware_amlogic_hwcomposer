@@ -228,5 +228,7 @@ meson_hwc_cc_defaults {
         "vendor.amlogic.hardware.systemcontrol@1.1",
         "libpng",
         "libz",
+        "vendor.amlogic.hardware.errormonitor@1.0",
+        "liberrormonitorclient",
     ],
 }

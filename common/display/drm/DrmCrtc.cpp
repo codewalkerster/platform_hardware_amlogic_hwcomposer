@@ -24,6 +24,7 @@
 
 /* emulation fb0 of drm free fb memory sysfs node*/
 #define DISPLAY_FB0_FREE_FB_MEM_DRM    "/sys/class/graphics/fb0/force_free_mem"
+#define SET_MODE_TIMEOUT    5e9
 
 DrmCrtc::DrmCrtc(int drmFd, drmModeCrtcPtr p, uint32_t pipe)
     : HwDisplayCrtc(),
@@ -276,6 +277,10 @@ int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
 
     if (modeBlob == 0) {
         MESON_LOGE("Mode invalid for current pipe [%s]", mode.name);
+
+        notify_error_monitor(EERORMONITOR_ERROR_LEVEL_SERIOUS, ERROR_MONITOR_DUMP_LOGCAT,
+            AML_SYS_TYPE_STANDBY_NO_OUTPUT, "Mode invalid for current pipe");
+
         return -EINVAL;
     }
 
@@ -345,6 +350,7 @@ int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
     mVrrEnabled->setValue(enableVrr);
     mVrrEnabled->apply(req);
 
+    nsecs_t begin = systemTime(CLOCK_MONOTONIC);
     ret = drmModeAtomicCommit(
         mDrmFd,
         req,
@@ -352,6 +358,11 @@ int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
         NULL);
     if (ret) {
         MESON_LOGE("set Mode failed  ret (%d)", ret);
+    }
+    nsecs_t timeSpend = systemTime(CLOCK_MONOTONIC) - begin;
+    if (timeSpend > SET_MODE_TIMEOUT) {
+        notify_error_monitor(EERORMONITOR_ERROR_LEVEL_NORMAL, ERROR_MONITOR_DUMP_LOGCAT,
+            AML_SYS_TYPE_STANDBY_LONG_TIME, "Set mode spend too long");
     }
 
     drmModeAtomicFree(req);

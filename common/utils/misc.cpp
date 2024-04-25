@@ -247,3 +247,15 @@ int32_t gralloc_unlock_dma_buf(native_handle_t * handle) {
         return 0;
     return -EINVAL;
 }
+
+void notify_error_monitor(int32_t level, int32_t logType,
+    int32_t errortype, const char* msg) {
+    MESON_LOGW("Hwc start notify ErrorMonitor");
+    ErrorMonitorClient *client = ErrorMonitorClient::getInstance();
+    if (client) {
+        client->notifyErrorInfo(EERORMONITOR_SUBMODULE_HWC,
+            level, logType, errortype, msg);
+    } else {
+        MESON_LOGW("Hwc get ErrorMonitor instance failed");
+    }
+}
