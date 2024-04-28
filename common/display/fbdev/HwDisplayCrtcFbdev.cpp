@@ -69,23 +69,7 @@ int32_t HwDisplayCrtcFbdev::bind(
 }
 
 int32_t HwDisplayCrtcFbdev::unbind() {
-    /*TODO: temp disable here.
-    * systemcontrol and hwc set display mode
-    * at the same time, there is a timing issue now.
-    * Just disable it here, later will remove systemcontrol
-    * set displaymode when hotplug.
-    */
     if (mBinded) {
-        #if 0
-        static drm_mode_info_t nullMode = {
-            DRM_DISPLAY_MODE_NULL,
-            0, 0,
-            0, 0,
-            60.0
-        };
-        std::string dispmode(nullMode.name);
-        writeCurDisplayMode(dispmode);
-        #endif
         if (mConnector.get())
             mConnector->setCrtcId(0);
         mConnector.reset();
@@ -179,13 +163,7 @@ int32_t HwDisplayCrtcFbdev::update() {
     } else {
         /*clear mode info.*/
         memset(&mCurModeInfo, 0, sizeof(mCurModeInfo));
-        /* TODO: temp disable mode setting in HWC. */
-        #if 0
-        strcpy(mCurModeInfo.name, DRM_DISPLAY_MODE_NULL);
-        setMode(mCurModeInfo);
-        #else
         MESON_LOGD("crtc(%d) update with no connector", mId);
-        #endif
     }
 
     return 0;

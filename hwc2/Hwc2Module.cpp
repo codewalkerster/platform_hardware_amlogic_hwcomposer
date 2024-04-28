@@ -705,7 +705,7 @@ static int hwc2_device_open(
         }
     }
 
-    sc_set_property(HWC_BOOTED_PROP, "true");
+    sys_set_prop(HWC_BOOTED_PROP, "true");
     return 0;
 }
 

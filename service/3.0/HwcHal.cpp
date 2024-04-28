@@ -975,7 +975,6 @@ HWC3::Error HwcHal::setAidlClientPid(int32_t pid) {
 }
 
 /* hwc 3.2 */
-#if (PLATFORM_SDK_VERSION >= 34)
 HWC3::Error HwcHal::getHdrConversionCapabilities(
     std::vector<common::HdrConversionCapability>* outHdrConversionCapability) {
 
@@ -1116,7 +1115,6 @@ HWC3::Error HwcHal::getOverlaySupport(OverlayProperties* outProperties) {
 
     return HWC3::Error::None;
 }
-#endif
 
 void HwcHal::initCapabilities() {
     uint32_t count = 0;
@@ -1280,7 +1278,6 @@ bool HwcHal::initDispatch() {
     }
 
     /* hwc3.2 interfaces */
-#if (PLATFORM_SDK_VERSION >= 34)
     if (!initHwc3Dispatch(HWC3_FUNCTION_GET_HDR_CONVERSION_CAPABILITIES,
                 &mDispatch.getHdrConversionCapabilities) ||
         !initHwc3Dispatch(HWC3_FUNCTION_SET_HDR_CONVERSION_STRATEGY,
@@ -1289,7 +1286,6 @@ bool HwcHal::initDispatch() {
                 &mDispatch.getOverlaySupport)) {
         ALOGE("initDispatch hwc3.2 interface failed");
     }
-#endif
     return true;
 }
 

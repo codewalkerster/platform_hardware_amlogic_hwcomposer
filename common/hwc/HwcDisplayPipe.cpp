@@ -425,15 +425,7 @@ int32_t HwcDisplayPipe::initDisplayMode(std::shared_ptr<PipeStat> & stat) {
     switch (stat->cfg.modeConnectorType) {
         case DRM_MODE_CONNECTOR_TV:
             {
-                #if 0
-                const char * cvbs_config_key = "ubootenv.var.cvbsmode";
-                std::string modeName;
-                if (0 == sc_read_bootenv(cvbs_config_key, modeName)) {
-                    stat->modeCrtc->writeCurDisplayMode(modeName);
-                }
-                #else
                 /*TODO:*/
-                #endif
             }
             break;
         case DRM_MODE_CONNECTOR_HDMIA:

@@ -16,6 +16,7 @@
 #include <math.h>
 
 #include "RealModeMgr.h"
+#include "misc.h"
 
 #define DEFAULT_DPI (159)
 #define DEFAULT_REFRESH_RATE (60.0f)
@@ -100,7 +101,6 @@ static const drm_mode_info_t fakeInitialMode = {
 
 RealModeMgr::RealModeMgr() {
     mLatestRealMode = fakeInitialMode;
-    mDvEnabled = false;
     mCallOnHotPlug = true;
     mHwcFbWidth = 0;
     mHwcFbHeight = 0;
@@ -284,8 +284,6 @@ int32_t RealModeMgr::update() {
     /* reset ModeList */
     reset();
     if (mConnector->isConnected()) {
-        mDvEnabled = mConnector->isDvEnable();
-        MESON_LOGD("RealModeMgr::update mDvEnabled(%d)", mDvEnabled);
         mConnector->getModes(connectorModeList);
         int ret = mCrtc->getMode(realMode);
         if (ret == 0) {
@@ -327,8 +325,6 @@ int32_t RealModeMgr::update() {
 
     if (!useFakeMode) {
         mLatestRealMode = realMode;
-        //todo: replace the displayid for dualDisplay
-        sc_update_density(HWC_DISPLAY_PRIMARY, realMode.pixelW, realMode.pixelH);
     } else {
         strncpy(mLatestRealMode.name, "FAKE_PREVIOUS_MODE", DRM_DISPLAY_MODE_LEN);
         mModes.emplace(nextModeId++, mLatestRealMode);
@@ -556,25 +552,22 @@ bool RealModeMgr::isSeamlessSwitch(uint32_t config) {
 // TODO: remove the sc related default boot config api when mesondisplay sdk is ready
 int32_t RealModeMgr::getPreferredBootConfig(int32_t* outConfig) {
     std::lock_guard<std::mutex> lock(mMutex);
+    MESON_ASSERT(mModePolicy, "RealModeMgr has no mode Policy!!!");
     *outConfig = mActiveConfigId;
 
     std::string prefMode;
-    int32_t ret = -1;
     if (mModePolicy.get()) {
-        ret = mModePolicy->getPreferredBootConfig(prefMode);
-    } else {
-        ret = sc_getPreferredDisplayConfig(HWC_DISPLAY_PRIMARY, prefMode);
-    }
-
-    if (!ret) {
-        for (auto it = mModes.begin(); it != mModes.end(); ++it) {
-            if (strncmp(prefMode.c_str(), it->second.name, DRM_DISPLAY_MODE_LEN) == 0 &&
-                    mConnector->checkFracMode(it->second)) {
-                *outConfig = it->first;
-                [[maybe_unused]] drm_mode_info_t cfg = it->second;
-                MESON_LOGD("%s outConfig = %d (%dx%d@%f)", __func__, *outConfig,
-                        cfg.pixelW, cfg.pixelH, cfg.refreshRate);
-                break;
+        int32_t ret = mModePolicy->getPreferredBootConfig(prefMode);
+        if (ret == 0) {
+            for (auto it = mModes.begin(); it != mModes.end(); ++it) {
+                if (strncmp(prefMode.c_str(), it->second.name, DRM_DISPLAY_MODE_LEN) == 0 &&
+                        mConnector->checkFracMode(it->second)) {
+                    *outConfig = it->first;
+                    [[maybe_unused]] drm_mode_info_t cfg = it->second;
+                    MESON_LOGD("%s outConfig = %d (%dx%d@%f)", __func__, *outConfig,
+                            cfg.pixelW, cfg.pixelH, cfg.refreshRate);
+                    break;
+                }
             }
         }
     }
@@ -600,14 +593,6 @@ int32_t RealModeMgr::setBootConfig(int32_t config) {
 
         if (mModePolicy.get()) {
             mModePolicy->setBootConfig(cfg);
-        } else {
-            sc_setBootDisplayConfig(HWC_DISPLAY_PRIMARY, dispmode);
-
-            if (fabs(cfg.refreshRate - floor(cfg.refreshRate)) > 1e-2) {
-                sc_set_bootenv(UBOOTENV_FRAC_RATE_POLICY, "1");
-            } else {
-                sc_set_bootenv(UBOOTENV_FRAC_RATE_POLICY, "0");
-            }
         }
     } else {
         MESON_LOGE("set invalid boot config (%d)", config);
@@ -622,8 +607,6 @@ int32_t RealModeMgr::clearBootConfig() {
     MESON_LOGD("%s", __func__);
     if (mModePolicy.get()) {
         mModePolicy->clearBootConfig();
-    } else {
-        sc_clearBootDisplayConfig(HWC_DISPLAY_PRIMARY);
     }
     return HWC2_ERROR_NONE;
 }
@@ -656,9 +639,6 @@ int32_t RealModeMgr::setModeLocked(drm_mode_info_t & mode) {
             mode.name, seamless);
     updateActiveConfig(mode);
 
-    //todo: replace the displayid for dualDisplay
-    sc_update_density(HWC_DISPLAY_PRIMARY, mLatestRealMode.pixelW, mLatestRealMode.pixelH);
-
     if (seamless) {
         mConnector->setMode(mode);
         // seamless mode switch, only vsync period change
@@ -666,9 +646,9 @@ int32_t RealModeMgr::setModeLocked(drm_mode_info_t & mode) {
     }  else {
         mCallOnHotPlug = false;
         if (fabs(mode.refreshRate - floor(mode.refreshRate)) > 1e-2) {
-            sc_set_property(FRC_POLICY_PROP, "1");
+            sys_set_prop(FRC_POLICY_PROP, "1");
         } else {
-            sc_set_property(FRC_POLICY_PROP, "0");
+            sys_set_prop(FRC_POLICY_PROP, "0");
         }
 
         // set the display mode through systemControl

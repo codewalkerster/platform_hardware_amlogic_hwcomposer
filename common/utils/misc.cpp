@@ -17,17 +17,14 @@
 #include <cutils/properties.h>
 #include <am_gralloc_ext.h>
 
-#if PLATFORM_SDK_VERSION >= 28
 #include <ui/Rect.h>
 #include <ui/GraphicBufferAllocator.h>
 #include <ui/GraphicBufferMapper.h>
-#endif
 
 #include <misc.h>
 
 #define ION_FLAG_EXTEND_MESON_HEAP (1 << 30)
 #define ION_HEAP_TYPE_CUSTOM 16
-
 
 bool sys_get_bool_prop(const char *prop, bool defVal) {
     return property_get_bool(prop, defVal);
@@ -154,7 +151,6 @@ int32_t sysfs_get_int(const char* path, int32_t def) {
     return val;
 }
 
-#if PLATFORM_SDK_VERSION >= 28
 native_handle_t * gralloc_alloc_dma_buf(
     int w, int h, int format, bool bScanout, bool afbc, int type) {
     static GraphicBufferAllocator & allocService = GraphicBufferAllocator::get();
@@ -251,73 +247,3 @@ int32_t gralloc_unlock_dma_buf(native_handle_t * handle) {
         return 0;
     return -EINVAL;
 }
-
-#else
-native_handle_t* native_handle_clone(const native_handle_t* handle) {
-
-    if (!handle) return NULL;
-
-    native_handle_t* clone = native_handle_create(handle->numFds, handle->numInts);
-    if (!clone) return NULL;
-
-    for (int i = 0; i < handle->numFds; i++) {
-        clone->data[i] = ::dup(handle->data[i]);
-        if (clone->data[i] < 0) {
-            ALOGE("native_handle clone fail, delete clone handle");
-            clone->numFds = i;
-            native_handle_close(clone);
-            native_handle_delete(clone);
-            return NULL;
-        }
-    }
-
-    memcpy(&clone->data[handle->numFds], &handle->data[handle->numFds],
-            sizeof(int) * handle->numInts);
-
-    return clone;
-}
-
-native_handle_t * gralloc_alloc_dma_buf(
-    int w, int h, int format, bool bScanout, bool afbc) {
-    UNUSED(w);
-    UNUSED(h);
-    UNUSED(format);
-    UNUSED(bScanout);
-    UNUSED(afbc);
-    MESON_ASSERT(0, "NO IMPLEMENT.");
-    return NULL;
-}
-
-int32_t gralloc_free_dma_buf(native_handle_t * hnd) {
-    MESON_ASSERT(0, "NO IMPLEMENT.");
-    return 0;
-}
-
-native_handle_t * gralloc_ref_dma_buf(const native_handle_t * hnd) {
-    ./*in fact we need the retain function in gralloc1 hal, but
-     it is not exposed to other modules,
-     we use clone instead now.*/
-    return native_handle_clone(hnd);
-}
-
-int32_t gralloc_unref_dma_buf(native_handle_t * hnd) {
-    native_handle_close(hnd);
-    native_handle_delete(hnd);
-}
-
-int32_t gralloc_lock_dma_buf(
-    native_handle_t * handle, uint32_t usage, void** vaddr) {
-    UNUSED(handle);
-    UNUSED(usage);
-    UNUSED(vaddr);
-    MESON_ASSERT(0, "gralloc_lock_dma_buf NO IMPLEMENT.");
-    return -EINVAL;
-}
-
-int32_t gralloc_unlock_dma_buf(native_handle_t * handle) {
-    UNUSED(handle);
-    MESON_ASSERT(0, "gralloc_unlock_dma_buf NO IMPLEMENT.");
-    return -EINVAL;
-}
-
-#endif

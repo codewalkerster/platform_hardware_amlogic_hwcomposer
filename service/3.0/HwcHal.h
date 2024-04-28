@@ -126,14 +126,12 @@ public:
     HWC3::Error setLayerBrightness(int64_t display, int64_t layer, const LayerBrightness& brightness) override;
 
     /* hwc3.2 interface */
-#if (PLATFORM_SDK_VERSION >= 34)
     HWC3::Error getHdrConversionCapabilities(
         std::vector<common::HdrConversionCapability>*) override;
     HWC3::Error setHdrConversionStrategy(
         const common::HdrConversionStrategy& conversionStrategy,
         common::Hdr* preferredHdrOutputType) override;
     HWC3::Error getOverlaySupport(OverlayProperties* properties) override;
-#endif
 
     /* extern interface */
     HWC3::Error setAidlClientPid(int32_t pid) override;

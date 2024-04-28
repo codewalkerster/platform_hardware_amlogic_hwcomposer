@@ -781,7 +781,6 @@ ndk::ScopedAStatus ComposerClient::setIdleTimerEnabled(int64_t displayId __unuse
 }
 
 /*hwc 3.2 */
-#if (PLATFORM_SDK_VERSION >= 34)
 ndk::ScopedAStatus ComposerClient::getHdrConversionCapabilities(
         std::vector<common::HdrConversionCapability>* outHdrConversionCapability) {
     DEBUG_LOG("%s", __FUNCTION__);
@@ -817,7 +816,6 @@ ndk::ScopedAStatus ComposerClient::setRefreshRateChangedCallbackDebugEnabled(
     DEBUG_LOG("%s", __FUNCTION__);
     return ToBinderStatus(HWC3::Error::Unsupported);
 }
-#endif
 
 ndk::SpAIBinder ComposerClient::createBinder() {
     auto binder = BnComposerClient::createBinder();
@@ -907,10 +905,8 @@ void ComposerClient::executeLayerCommand(int64_t displayId,
 
     DISPATCH_LAYER_COMMAND(layerCommand, displayId, layerId, cursorPosition,
                            CursorPosition);
-#if (PLATFORM_SDK_VERSION >= 34)
     DISPATCH_LAYER_COMMAND(layerCommand, displayId, layerId, bufferSlotsToClear,
                            BufferSlotsToClear);
-#endif
     DISPATCH_LAYER_COMMAND(layerCommand, displayId, layerId, buffer, Buffer);
     DISPATCH_LAYER_COMMAND(layerCommand, displayId, layerId, damage, SurfaceDamage);
     DISPATCH_LAYER_COMMAND(layerCommand, displayId, layerId, blendMode, BlendMode);
@@ -1202,7 +1198,6 @@ void ComposerClient::executeLayerCommandSetLayerBuffer(int64_t displayId,
     }
 }
 
-#if (PLATFORM_SDK_VERSION >= 34)
 void ComposerClient::executeLayerCommandSetLayerBufferSlotsToClear(int64_t displayId,
         int64_t layerId, const std::vector<int32_t>& bufferSlotsToClear) {
     DEBUG_LOG("%s", __FUNCTION__);
@@ -1221,7 +1216,6 @@ void ComposerClient::executeLayerCommandSetLayerBufferSlotsToClear(int64_t displ
         }
     }
 }
-#endif
 
 void ComposerClient::executeLayerCommandSetLayerSurfaceDamage(
       int64_t displayId, int64_t layerId,

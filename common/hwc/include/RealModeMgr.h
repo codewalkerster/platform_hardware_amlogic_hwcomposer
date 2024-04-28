@@ -83,9 +83,6 @@ protected:
     // protect mMode and mActiveConfigId
     std::mutex mMutex;
 
-    // Dolby Vision enabled or not
-    bool mDvEnabled;
-
     bool mIsFakeSizeMode;
 };
 

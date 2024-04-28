@@ -61,7 +61,6 @@ void FixedSizeModeMgr::setDisplayResources(
 int32_t FixedSizeModeMgr::update() {
     bool useFakeMode = true;
     drm_mode_info_t realMode;
-    bool need_reset_density = false;
 
     if (mConnector->isConnected() && 0 == mCrtc->getMode(realMode)) {
         if (realMode.name[0] != 0) {
@@ -74,11 +73,9 @@ int32_t FixedSizeModeMgr::update() {
                      * the dispMode is less than 720P and framebuffer size is 4K */
                     mCurMode.pixelW = FB_SIZE_1080P_W;
                     mCurMode.pixelH = FB_SIZE_1080P_H;
-                    need_reset_density = true;
                 } else if (mCurMode.pixelW != mFbWidth || mCurMode.pixelH != mFbHeight) {
                     mCurMode.pixelW = mFbWidth;
                     mCurMode.pixelH = mFbHeight;
-                    need_reset_density = true;
                 }
             }
 
@@ -95,16 +92,10 @@ int32_t FixedSizeModeMgr::update() {
     if (useFakeMode) {
         mCurMode = mPreviousMode;
         if (mCurMode.pixelW != mFbWidth || mCurMode.pixelH != mFbHeight) {
-            need_reset_density = true;
             mCurMode.pixelW = mFbWidth;
             mCurMode.pixelH = mFbHeight;
         }
         strncpy(mCurMode.name, "FAKE_PREVIOUS_MODE", DRM_DISPLAY_MODE_LEN);
-    }
-
-    if (need_reset_density) {
-        //todo: replace the displayid for dualDisplay
-        sc_update_density(HWC_DISPLAY_PRIMARY, mCurMode.pixelW, mCurMode.pixelH);
     }
 
     return 0;

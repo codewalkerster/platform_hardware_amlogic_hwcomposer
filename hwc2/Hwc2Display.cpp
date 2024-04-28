@@ -2370,10 +2370,8 @@ void Hwc2Display::dump(String8 & dumpstr) {
     dumpstr.append("HDR Capabilities:\n");
     dumpstr.appendFormat("    DolbyVision1=%d\n",
         mHdrCaps.DolbyVisionSupported ?  1 : 0);
-#if (PLATFORM_SDK_VERSION >= 34)
     dumpstr.appendFormat("    DOLBY_VISION_4K30=%d\n",
         mHdrCaps.DOLBY_VISION_4K30_Supported ? 1 : 0);
-#endif
     dumpstr.appendFormat("    HLG=%d\n",
         mHdrCaps.HLGSupported ?  1 : 0);
     dumpstr.appendFormat("    HDR10=%d, HDR10+=%d, "

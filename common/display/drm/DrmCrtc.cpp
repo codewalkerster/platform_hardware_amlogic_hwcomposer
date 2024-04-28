@@ -247,7 +247,7 @@ int32_t DrmCrtc::setMode(drm_mode_info_t & mode, bool seamless) {
     return setModeLocked(mode, seamless);
 }
 
-int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless __unused) {
+int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
     ATRACE_CALL();
     int ret;
     std::shared_ptr<DrmProperty> crtcid;

@@ -157,13 +157,11 @@ public:
     virtual HWC3::Error setLayerBrightness(int64_t display, int64_t layer, const LayerBrightness& brightness) = 0;
 
     /* hwc 3.2 interface */
-#if (PLATFORM_SDK_VERSION >= 34)
     virtual HWC3::Error getHdrConversionCapabilities(
         std::vector<common::HdrConversionCapability>*) = 0;
     virtual HWC3::Error setHdrConversionStrategy(
         const common::HdrConversionStrategy& conversionStrategy, common::Hdr* type) = 0;
     virtual HWC3::Error getOverlaySupport(OverlayProperties* preferredHdrOutputType) = 0;
-#endif
 
     /* extern interface */
     virtual HWC3::Error setAidlClientPid(int32_t pid) = 0;

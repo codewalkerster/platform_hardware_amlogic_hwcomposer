@@ -372,7 +372,6 @@ int32_t DrmConnector::loadConnectorInfo(drmModeConnectorPtr metadata) {
     return 0;
 }
 
-#if (PLATFORM_SDK_VERSION >= 34)
 /*use drm property for dv_cap*/
 int32_t DrmConnector:: parseDvCapabilities() {
     if (mDvCaps) {
@@ -390,7 +389,6 @@ int32_t DrmConnector:: parseDvCapabilities() {
 
     return 0;
 }
-#endif
 
 bool DrmConnector::supportSourceLed() {
     if (mHdrCapabilities.DolbyVisionSupported &&
@@ -697,9 +695,7 @@ void DrmConnector::updateHdrCaps() {
 
     if (mType == DRM_MODE_CONNECTOR_HDMIA) {
         parseHdmiHdrCapabilities(mHdrCapabilities);
-#if (PLATFORM_SDK_VERSION >= 34)
         parseDvCapabilities();
-#endif
     }
     /* for TV product*/
 
@@ -714,9 +710,7 @@ void DrmConnector::updateHdrCaps() {
         mHdrCapabilities.maxLuminance = sDefaultMaxLumiance;
         mHdrCapabilities.avgLuminance = sDefaultMaxLumiance;
         mHdrCapabilities.minLuminance = sDefaultMinLumiance;
-#if (PLATFORM_SDK_VERSION >= 34)
         parseDvCapabilities();
-#endif
     MESON_LOGD("dolby version:%d, hlg:%d, hdr10:%d, hdr10+:%d max:%d, avg:%d, min:%d\n",
         mHdrCapabilities.DolbyVisionSupported ? 1 : 0,
         mHdrCapabilities.HLGSupported ? 1 : 0,

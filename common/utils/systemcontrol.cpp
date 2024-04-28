@@ -27,17 +27,12 @@
 #define PROP_DOLBY_VISION_ENABLE "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TV_ENABLE "persist.vendor.sys.tv.dolbyvision.enable"
 
-#if PLATFORM_SDK_VERSION >=  26
 #include <vendor/amlogic/hardware/systemcontrol/1.1/ISystemControl.h>
 using ::vendor::amlogic::hardware::systemcontrol::V1_1::ISystemControl;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::hidl_string;
 using ::android::hardware::Return;
-#else
-#include <ISystemControlService.h>
-#include <binder/IServiceManager.h>
-#endif
 
 #define CHK_SC_PROXY() \
     if (gSC == NULL) { \
@@ -49,8 +44,6 @@ using ::android::hardware::Return;
     }
 
 /*HIDL BASED SYSTEMCONTROL SERVICE PROXY.*/
-#if PLATFORM_SDK_VERSION >= 26
-
 static sp<ISystemControl> gSC = NULL;
 
 struct SystemControlDeathRecipient : public android::hardware::hidl_death_recipient  {
@@ -122,10 +115,8 @@ int32_t sc_get_hdmitx_hdcp_state(bool & val) {
 }
 
 int32_t sc_notify_hdmi_plugin() {
-#if PLATFORM_SDK_VERSION > 30
     CHK_SC_PROXY();
     gSC->notifyPlugin();
-#endif
     return 0;
 }
 
@@ -164,27 +155,6 @@ int32_t sc_set_display_mode(std::string &dispmode) {
         MESON_LOGE("sc_set_display_mode FAIL.");
         return -EFAULT;
     }
-}
-
-int32_t sc_get_osd_position(std::string &dispmode, int *position) {
-    CHK_SC_PROXY();
-
-    auto out = gSC->getPosition(dispmode, [&position](const Result &ret,
-                        int left, int top, int width, int height) {
-        if (ret == Result::OK) {
-            position[0] = left;
-            position[1] = top;
-            position[2] = width;
-            position[3] = height;
-        }
-    });
-
-    if (!out.isOk()) {
-        MESON_LOGE("sc_get_osd_positionc fail.");
-        return -EFAULT;
-    }
-
-    return 0;
 }
 
 int32_t sc_write_sysfs(const char * path, std::string & val) {
@@ -305,54 +275,6 @@ int32_t sc_set_property(const char * prop, const char *val ) {
     }
 }
 
-int32_t sc_sink_support_dv(std::string &mode, bool &val) {
-    CHK_SC_PROXY();
-
-    gSC->sinkSupportDolbyVision([&mode, &val](
-        const Result &ret, const hidl_string &sinkMode, const bool &support) {
-            if (ret == Result::OK) {
-                val = support;
-                mode = sinkMode.c_str();
-            } else {
-                val = false;
-                mode.clear();
-            }
-    });
-
-    if (val == false)
-        MESON_LOGD("[%s] sink not support DV", __func__);
-
-    return 0;
-}
-
-int32_t sc_get_dolby_version_type() {
-    CHK_SC_PROXY();
-
-    int32_t result = 0;
-
-    gSC->getDolbyVisionType([&result](const Result &ret, const int32_t& value) {
-        if (ret == Result::OK) {
-            result = value;
-        }
-    });
-
-    return result;
- }
-
-bool sc_is_dolby_version_enable() {
-    std::string mode;
-    bool unused, dv_enable = false;
-    sc_sink_support_dv(mode, unused);
-
-    if (!sc_get_property_boolean(PROP_DOLBY_VISION_TV_ENABLE, false)) {
-        dv_enable = false;
-    } else if (!mode.empty()) {
-        dv_enable = true;
-     }
- 
-    return dv_enable;
-}
-
 bool  sc_get_pref_display_mode(std::string & dispmode) {
     CHK_SC_PROXY();
 
@@ -463,63 +385,6 @@ int32_t sc_set_hdmi_allm(bool on) {
     return 0;
 }
 
-bool sc_update_density(int displayId, int width, int height) {
-    CHK_SC_PROXY();
-
-    Result ret = gSC->syncDensity(displayId,width,height);
-    if (ret != Result::OK)
-        return false;
-
-    return true;
-}
-
-int32_t sc_clearBootDisplayConfig(int /* displayId */) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->clearBootDisplayConfig("true");
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc %s FAIL.", __func__);
-        return -EFAULT;
-    }
-}
-
-int32_t sc_setBootDisplayConfig(int /* displayId */, std::string & dispmode) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->setBootDisplayConfig(dispmode);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc %s FAIL.", __func__);
-        return -EFAULT;
-    }
-}
-
-int32_t sc_getPreferredDisplayConfig(int /* displayId */, std::string & dispmode) {
-    CHK_SC_PROXY();
-    auto rtn = gSC->getPreferredDisplayConfig([&dispmode](
-        const Result & ret, const hidl_string & supportDispModes) {
-        if (Result::OK == ret) {
-            dispmode = supportDispModes.c_str();
-        } else {
-            dispmode.clear();
-        }
-    });
-
-    if (!rtn.isOk()) {
-        MESON_LOGE("sc %s Fail", __func__);
-        return -EFAULT;
-    }
-
-    if (dispmode.empty()) {
-        MESON_LOGE("sc %s FAIL", __func__);
-        return false;
-    }
-    return 0;
-}
-
 // for self-adaptive
 int32_t sc_frame_rate_display(bool on, const ISystemControl::Rect& rect) {
     CHK_SC_PROXY();
@@ -532,140 +397,3 @@ int32_t sc_frame_rate_display(bool on, const ISystemControl::Rect& rect) {
         return -EFAULT;
     }
 }
-
-#else
-
-static sp<ISystemControlService> gSC = NULL;
-
-static void load_sc_proxy() {
-    if (gSC != NULL)
-        return;
-
-    sp<IServiceManager> sm = defaultServiceManager();
-    if (sm == NULL) {
-        MESON_LOGE("Couldn't get default ServiceManager\n");
-        return;
-    }
-
-    gSC = interface_cast<ISystemControlService>(
-        sm->getService(String16("system_control")));
-    if (gSC == NULL)
-        MESON_LOGE("Couldn't get connection to SystemControlService\n");
-}
-
-int32_t sc_get_hdmitx_mode_list(std::vector<std::string>& edidlist) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->getSupportDispModeList(&edidlist);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_get_hdmitx_mode_list FAIL.");
-        return -EFAULT;
-    }
-}
-
-int32_t sc_get_hdmitx_hdcp_state(bool & val) {
-    CHK_SC_PROXY();
-
-    int status;
-    auto ret = gSC->isHDCPTxAuthSuccess(status);
-    if (!ret.isOk()) {
-        MESON_LOGE("sc_get_hdmitx_hdcp_state FAIL.");
-        return -EFAULT
-    }
-    val = (status == 1) ?  true : false;
-    MESON_LOGD("hdcp status: %d", status);
-    return 0;
-}
-
-int32_t  sc_get_display_mode(std::string & dispmode) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->getActiveDispMode(&dispmode);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_get_display_mode FAIL.");
-        return -EFAULT;
-    }
-}
-
-int32_t sc_set_display_mode(std::string &dispmode) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->setActiveDispMode(dispmode);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_set_display_mode FAIL.");
-        return -EFAULT;
-    }
-}
-
-int32_t sc_get_osd_position(std::string &dispmode, int *position) {
-    CHK_SC_PROXY();
-
-    const char * mode = dispmode.c_str();
-    int left, top, width, height;
-    auto ret = gSC->getPosition(String16(mode), left, top, width, height);
-    if (!ret.isOk()) {
-        MESON_LOGE("sc_get_osd_position FAIL.");
-        return -EFAULT;
-    }
-    position[0] = left;
-    position[1] = top;
-    position[2] = width;
-    position[3] = height;
-    return 0;
-}
-
-int32_t sc_write_sysfs(const char * path, std::string &dispmode) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->writeSysfs(dispmode);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_write_sysfs FAIL.");
-        return -EFAULT;
-    }
-}
-
-int32_t sc_read_sysfs(const char * path, std::string &dispmode) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->readSysfs(dispmode);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_read_sysfs FAIL.");
-        return -EFAULT;
-    }
-}
-
-int32_t sc_set_hdmi_allm(bool on) {
-    int32_t value = on ? 1 : 0;
-
-    CHK_SC_PROXY();
-    MESON_LOGD("set auto low latency mode to %d", value);
-    gSC->setALLMState(value);
-
-    return 0;
-}
-
-#if PLATFORM_SDK_VERSION == 30
-// for self-adaptive
-int32_t sc_frame_rate_display(bool on, const ISystemControl::Rect& rect) {
-    CHK_SC_PROXY();
-
-    auto ret = gSC->frameRateDisplay(on, rect);
-    if (ret.isOk()) {
-        return 0;
-    } else {
-        MESON_LOGE("sc_frame_rate_display FAIL.");
-        return -EFAULT;
-    }
-}
-#endif
-#endif

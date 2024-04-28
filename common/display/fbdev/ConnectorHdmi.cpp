@@ -22,7 +22,6 @@
 
 #include "Dv.h"
 
-#define PROP_DV_ENABLE_STATUS "persist.vendor.sys.tv.dolbyvision.enable"
 #define PROP_HDR_PREFERENCE "persist.vendor.sys.hdr_preference"
 
 int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps);
@@ -376,15 +375,10 @@ int32_t getLineValue(const char *lineStr, const char *magicStr) {
 *     DM Ver: 1
 *******************************************/
 int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps) {
-#if (PLATFORM_SDK_VERSION >= 34)
     // DolbyVision1
     const char *DV_PATH = "/sys/class/amhdmitx/amhdmitx0/dv_cap2";
     // HDR
     const char *HDR_PATH = "/sys/class/amhdmitx/amhdmitx0/hdr_cap2";
-#else
-    const char *DV_PATH = "/sys/class/amhdmitx/amhdmitx0/dv_cap";
-    const char *HDR_PATH = "/sys/class/amhdmitx/amhdmitx0/hdr_cap";
-#endif
     // hdmr attr
     [[maybe_unused]] const char *ATTR_PATH = "/sys/class/amhdmitx/amhdmitx0/attr";
 
@@ -416,11 +410,9 @@ int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps) {
                  * That is to say, not every DV TV can supports up to 2160p60hz under DV, maybe 2160p30hz.
                  */
                 hdrCaps.DolbyVisionSupported = true;
-#if (PLATFORM_SDK_VERSION >= 34)
                 if (strstr(pos, "2160p30hz")) {
                     hdrCaps.DOLBY_VISION_4K30_Supported = true;
                 }
-#endif
             }
 
         }
@@ -466,18 +458,6 @@ int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps) {
         close(fd);
     }
 
-#if PLATFORM_SDK_VERSION == 30
-    if (!hdrCaps.DolbyVisionSupported) {
-        // mask off all hdr cap if  color depth is 8bit, set it to sdr
-        if (!sysfs_get_string(ATTR_PATH, buf, sizeof(buf))) {
-            if (strstr(buf, "8bit")) {
-                MESON_LOGD("mask off all hdrCaps, as it's 8bit color depth");
-                memset(&hdrCaps, 0, sizeof(drm_hdr_capabilities));
-            }
-        }
-    }
-#endif
-
     /* Overwrite HdrCapabilities according to user's HDR preference
      * sdr: hides all HDR capabilities
      * hdr: hides Dolby Vision capabilities
@@ -485,28 +465,20 @@ int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps) {
      */
     if (hdr_preference == "sdr") {
       hdrCaps.DolbyVisionSupported = false;
-#if (PLATFORM_SDK_VERSION >= 34)
       hdrCaps.DOLBY_VISION_4K30_Supported = false;
-#endif
       hdrCaps.HDR10Supported = false;
       hdrCaps.HDR10PlusSupported = false;
       hdrCaps.HLGSupported = false;
     } else if (hdr_preference == "hdr") {
       hdrCaps.DolbyVisionSupported = false;
-#if (PLATFORM_SDK_VERSION >= 34)
       hdrCaps.DOLBY_VISION_4K30_Supported = false;
-#endif
     }
 
     MESON_LOGD("dolby version:%d,"
-#if (PLATFORM_SDK_VERSION >= 34)
             " dv3:%d,"
-#endif
             " hlg:%d, hdr10:%d, hdr10+:%d max:%d, avg:%d, min:%d\n",
         hdrCaps.DolbyVisionSupported ? 1:0,
-#if (PLATFORM_SDK_VERSION >= 34)
         hdrCaps.DOLBY_VISION_4K30_Supported ? 1: 0,
-#endif
         hdrCaps.HLGSupported ? 1:0,
         hdrCaps.HDR10Supported ? 1:0,
         hdrCaps.HDR10PlusSupported ? 1:0,
