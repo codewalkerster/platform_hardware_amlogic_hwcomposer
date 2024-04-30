@@ -176,6 +176,7 @@ ModePolicy::ModePolicy(std::shared_ptr<meson::DisplayAdapter> adapter, const uin
     mDisplayWidth = 0;
     mDisplayHeight = 0;
     mInitialized = false;
+    mThread = 0;
 }
 
 ModePolicy::~ModePolicy() {
@@ -2238,7 +2239,7 @@ bool ModePolicy::applyDisplaySetting(bool force) {
 
     // if support qms, don't apply changes if only refrsh rate change during initialization
     // let framework handle it
-    if (mConnector->supportVrr() && !mInitialized) {
+    if (mConnector && mConnector->supportVrr() && !mInitialized) {
         MESON_LOGI("QMS initialized, attr_change:%d, hdr policy:%d, priority:%d, ready:%d, modechange:%d, frac:%d",
                 attr_change, hdr_policy_change,
                 hdr_priority_change, connectorReady,

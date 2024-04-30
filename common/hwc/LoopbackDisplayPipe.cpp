@@ -112,7 +112,11 @@ int32_t LoopbackDisplayPipe::handleRequest(uint32_t flags) {
     std::lock_guard<std::mutex> lock(mMutex);
     flags |= mFlags;
 
-    std::shared_ptr<PipeStat> stat = mPipeStats.find(0)->second;
+    auto statIt = mPipeStats.find(0);
+    if (statIt == mPipeStats.end())
+        return 0;
+
+    std::shared_ptr<PipeStat> stat = statIt->second;
     if ((flags & rPostProcessorStart) || (flags & rPostProcessorStop)) {
         bool bEnable = flags & rPostProcessorStart ? true : false;
         MESON_LOGV("Postprocessor enable event (%d)", bEnable);

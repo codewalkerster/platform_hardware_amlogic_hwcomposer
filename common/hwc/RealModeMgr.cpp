@@ -473,6 +473,7 @@ int32_t RealModeMgr::setPerferredMode(std::string mode) {
     curMode.refreshRate = DEFAULT_REFRESH_RATE;
     mCrtc->getMode(curMode);
     drm_mode_info_t desiredMode;
+    desiredMode.refreshRate = DEFAULT_REFRESH_RATE;
     for (auto it : mModes) {
         if (strcmp(it.second.name, mode.c_str()) == 0 &&
             mConnector->checkFracMode(it.second) == mConnector->checkFracMode(curMode)) {

@@ -70,7 +70,7 @@ HwcDisplayPipe::HwcDisplayPipe() {
     }
 
     /*default policy: assign osd plane N + 1 + 1*/
-    if (planes.size() > 0) {
+    if (planes.size() > 0 && dispNum >= 1) {
         pipeidx = dispNum - 1;
         for (auto planeIt = planes.rbegin(); planeIt != planes.rend(); planeIt ++) {
             plane = *planeIt;

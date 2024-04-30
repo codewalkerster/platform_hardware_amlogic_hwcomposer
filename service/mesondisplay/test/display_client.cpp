@@ -106,6 +106,8 @@ int main(int argc, char* argv[]) {
                 client->setDisplayMode(optarg, type);
                 break;
             case 'g':
+                if (optarg == NULL)
+                    break;
                 {
                     std::string value;
                     client->getDisplayAttribute(optarg, value, type);
