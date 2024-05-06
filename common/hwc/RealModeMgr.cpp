@@ -132,7 +132,12 @@ void RealModeMgr::setDisplayResources(
 }
 
 int32_t RealModeMgr::updateActiveConfig(drm_mode_info_t activeMode) {
+    int largestUsedModeId = -1;
     for (auto it = mModes.begin(); it != mModes.end(); ++it) {
+        int configId = static_cast<int>(it->first);
+        if (configId > largestUsedModeId)
+            largestUsedModeId = configId;
+
         if (strncmp(activeMode.name, it->second.name, DRM_DISPLAY_MODE_LEN) == 0 &&
             fabs(activeMode.refreshRate - it->second.refreshRate) < 1e-2) {
             mActiveConfigId = it->first;
@@ -141,8 +146,11 @@ int32_t RealModeMgr::updateActiveConfig(drm_mode_info_t activeMode) {
         }
     }
 
-    mActiveConfigId = mModes.size() - 1;
-    MESON_LOGD("%s failed to find [%s], default set activeConfigId to [%d]",
+    // could not find the active config in mModes
+    largestUsedModeId += 1;
+    mActiveConfigId = largestUsedModeId;
+    mModes.emplace(largestUsedModeId, activeMode);
+    MESON_LOGE("%s failed to find [%s], default set activeConfigId to [%d]",
             __func__, activeMode.name, mActiveConfigId);
 
     return HWC2_ERROR_NONE;
