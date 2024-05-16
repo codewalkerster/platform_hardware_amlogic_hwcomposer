@@ -228,7 +228,7 @@ int32_t Hwc2Display::setDisplayResource(
     mCrtc->getHdrMetadataKeys(mHdrKeys);
 
     if (mModePolicy.get())
-        mModePolicy->bindConnector(mConnector);
+        mModePolicy->bindConnectorAndCrtc(mConnector, mCrtc);
     MESON_LOG_FUN_LEAVE();
     return 0;
 }
@@ -1992,6 +1992,7 @@ hwc2_error_t Hwc2Display::setActiveConfigWithConstraints(hwc2_config_t config,
 }
 
 hwc2_error_t Hwc2Display::setAutoLowLatencyMode(bool enabled) {
+    ATRACE_CALL();
     if (mConnector->isConnected() == false) {
         return HWC2_ERROR_UNSUPPORTED;
     } else {
@@ -2000,8 +2001,24 @@ hwc2_error_t Hwc2Display::setAutoLowLatencyMode(bool enabled) {
         mIsDisablePostProcessor = enabled;
         mOutsideChanged = true;
         if (mModePolicy) {
-            return (hwc2_error_t)mModePolicy->setAutoLowLatencyMode(enabled);
+            std::unique_lock<std::mutex> stateLock(mStateLock);
+            bool needReset = false;
+
+            if (mConnector->getType() == DRM_MODE_CONNECTOR_HDMIA &&
+                    mConnector->supportVrr()) {
+                needReset = true;
+            }
+            if (needReset) {
+                mModeMgr->resetTags(false);
+            }
+            int32_t ret = mModePolicy->setAutoLowLatencyMode(enabled);
+            if (needReset) {
+                //mStateCondition.wait_for(stateLock, std::chrono::seconds(1));
+                mModeMgr->resetTags(true);
+            }
+            return (hwc2_error_t)ret;
         }
+
         return (hwc2_error_t)mConnector->setAutoLowLatencyMode(enabled);
     }
 }
@@ -2454,7 +2471,7 @@ std::unordered_map<hwc2_layer_t, std::shared_ptr<Hwc2Layer>> Hwc2Display::getAll
 
 int32_t Hwc2Display::setModePolicy(std::shared_ptr<IModePolicy> policy) {
     mModePolicy = policy;
-    mModePolicy->bindConnector(mConnector);
+    mModePolicy->bindConnectorAndCrtc(mConnector, mCrtc);
 
     mModeMgr->setModePolicy(policy);
     return 0;

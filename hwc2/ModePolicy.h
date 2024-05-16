@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include <HwDisplayConnector.h>
+#include <HwDisplayCrtc.h>
 
 #include "mode_policy.h"
 #include "mode_ubootenv.h"
@@ -228,7 +229,8 @@ public:
     ModePolicy(std::shared_ptr<meson::DisplayAdapter> adapter, const uint32_t displayId);
     ~ModePolicy();
 
-    int32_t bindConnector(std::shared_ptr<HwDisplayConnector> & connector) override;
+    int32_t bindConnectorAndCrtc(std::shared_ptr<HwDisplayConnector> & connector,
+            std::shared_ptr<HwDisplayCrtc> & crtc) override;
     bool setPolicy(int32_t policy) override;
     int32_t initialize() override;
     void onHotplug(bool connected) override;
@@ -366,6 +368,7 @@ protected:
 private:
     std::shared_ptr<meson::DisplayAdapter> mAdapter;
     std::shared_ptr<HwDisplayConnector> mConnector;
+    std::shared_ptr<HwDisplayCrtc>  mCrtc;
     ConnectorType  mConnectorType;
     meson_connector_type_e mModeConType;
 

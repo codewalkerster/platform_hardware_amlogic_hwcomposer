@@ -46,6 +46,7 @@ public:
     virtual int32_t setMode(drm_mode_info_t & mode, bool seamless = false) = 0;
 
     virtual int32_t waitVBlank(nsecs_t & timestamp) = 0;
+    virtual void setEnableVrr(bool /*enable */) {};
 
     /*Functions for compose & pageflip*/
     /*set the crtc display axis, and source axis,

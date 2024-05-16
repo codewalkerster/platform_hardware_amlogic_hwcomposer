@@ -39,6 +39,7 @@ public:
     int32_t setMode(drm_mode_info_t & mode, bool seamless = false);
 
     int32_t waitVBlank(nsecs_t & timestamp);
+    void setEnableVrr(bool enableVrr ) { mEnableVrr = enableVrr; };
 
     int32_t prePageFlip();
     int32_t pageFlip(int32_t & out_fence);
@@ -107,6 +108,9 @@ protected:
 
     /* uboot logo closed */
     bool mLogoClosed;
+
+    /* vrr enable */
+    bool mEnableVrr = true;
 };
 
 #endif/*DRM_CRTC_H*/

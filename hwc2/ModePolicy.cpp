@@ -6,6 +6,9 @@
  *
  * Description:
  */
+#define ATRACE_TAG ATRACE_TAG_GRAPHICS
+
+#include <utils/Trace.h>
 #include <hardware/hwcomposer2.h>
 #include <cutils/properties.h>
 #include <MesonLog.h>
@@ -914,10 +917,12 @@ void ModePolicy::dump(String8 &dumpstr) {
     }
 }
 
-int32_t ModePolicy::bindConnector(std::shared_ptr<HwDisplayConnector> & connector) {
+int32_t ModePolicy::bindConnectorAndCrtc(std::shared_ptr<HwDisplayConnector> & connector,
+        std::shared_ptr<HwDisplayCrtc> & crtc) {
     MESON_ASSERT(connector.get(), "ModePolicy bindConnector get null connector!!");
 
     mConnector = connector;
+    mCrtc = crtc;
     switch (mConnector->getType()) {
         case DRM_MODE_CONNECTOR_HDMIA:
             mDisplayType = DISPLAY_TYPE_MBOX;
@@ -1614,6 +1619,7 @@ int32_t ModePolicy::setDvMode(std::string &dv_mode) {
  *          "-1":really disable ALLM (VSIF don't contain allm info)
  * */
 void ModePolicy::setALLMMode(int state) {
+    ATRACE_CALL();
     /***************************************************************
      *         Comment for special solution in this func           *
      ***************************************************************
@@ -1699,9 +1705,15 @@ void ModePolicy::setALLMMode(int state) {
                 }
                 sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "-1");
             }
+            //4. if has qms support, then enable qms
+            if (mConnector->supportVrr()) {
+                MESON_LOGI("%s: enable QMS Vrr", __func__);
+                mCrtc->setEnableVrr(true);
+                setSourceOutputMode(mCurrentMode, true);
+            }
             break;
         case 1:
-            //when TV support dv and dv is enable
+            //1. when TV support dv and dv is enable
             if (isTVSupportDV && isDolbyVisionEnable()) {
                 mSceneOutInfo.dv_type = DOLBY_VISION_SET_DISABLE;
                 // disable the doblyvision when ALLM enable
@@ -1709,7 +1721,13 @@ void ModePolicy::setALLMMode(int state) {
                 disableDolbyVision(DOLBY_VISION_SET_DISABLE);
                 sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "-1");
             }
-            //2. enable allm
+            //2. if has qms support, then disable qms
+            if (mConnector->supportVrr()) {
+                MESON_LOGI("%s: disable QMS Vrr", __func__);
+                mCrtc->setEnableVrr(false);
+                setSourceOutputMode(mCurrentMode, true);
+            }
+            //3. enable allm
             sysfs_set_string(AUTO_LOW_LATENCY_MODE, ALLM_MODE[2]);
             MESON_LOGI("setALLMMode: ALLM_Mode: %s", ALLM_MODE[2]);
             break;
@@ -1742,8 +1760,9 @@ int32_t ModePolicy::setAutoLowLatencyMode(bool enabled) {
             sysfs_set_string(LOW_LATENCY, LOW_LATENCY_DISABLE);
         }
 
-        if (type == DRM_MODE_CONNECTOR_HDMIA)
+        if (type == DRM_MODE_CONNECTOR_HDMIA) {
             setALLMMode(enabled);
+        }
 
         return HWC2_ERROR_NONE;
     }

@@ -489,6 +489,10 @@ bool DrmConnector::checkFracMode(const drm_mode_info_t & mode) {
             std::find(mFracRefreshRates.begin(), mFracRefreshRates.end(),
                     mode.refreshRate) != mFracRefreshRates.end();
 
+        if (supportVrr()) {
+            return !modeIsFrac;
+        }
+
         return (currentIsFrac && modeIsFrac) || (!currentIsFrac && !modeIsFrac);
     }
 
