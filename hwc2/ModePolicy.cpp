@@ -2670,6 +2670,7 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
     //set dummy_l mode
     char curDisplayMode[MESON_MODE_LEN]    = {0};
     getDisplayMode(curDisplayMode);
+    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     if (mConnector->getType() == DRM_MODE_CONNECTOR_VIRTUAL) {
         if (strcmp(curDisplayMode, "dummy_l") != 0 || !mConnector->isReady()) {
             setDisplayMode("dummy_l");
@@ -2678,6 +2679,8 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
     } else if ((isHdmiUsed() == true) && (isConnected() == false)) {
         if (isVMXCertification()) {
            setDisplayMode("576cvbs");
+           getPosition("576cvbs", position);
+           setPosition("576cvbs", position[0], position[1],position[2], position[3]);
         } else {
            setDisplayMode("dummy_l");
         }
@@ -2688,8 +2691,12 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
             if (strcmp(cvbsOutmode, curDisplayMode) != 0) {
                 setDisplayMode(cvbsOutmode);
             }
+            getPosition(cvbsOutmode, position);
+            setPosition(cvbsOutmode, position[0], position[1],position[2], position[3]);
         } else {
             setDisplayMode("576cvbs");
+            getPosition("576cvbs", position);
+            setPosition("576cvbs", position[0], position[1],position[2], position[3]);
         }
         return;
     }
