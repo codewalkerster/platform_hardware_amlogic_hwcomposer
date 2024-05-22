@@ -2391,13 +2391,17 @@ bool ModePolicy::applyDisplaySetting(bool force) {
     sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "-1");
 
     // 10. start HDMI HDCP authenticate
-    if (isNeedChange) {
-        if (!cvbsMode) {
-            mTxAuth->start();
-        }
-    } else if (OUTPUT_MODE_STATE_INIT == mState) {
-        if (!cvbsMode) {
-            mTxAuth->start();
+    if (isHDCPDisable()) {
+        MESON_LOGI("hdcp disable\n");
+    } else {
+        if (isNeedChange) {
+            if (!cvbsMode) {
+                mTxAuth->start();
+            }
+        } else if (OUTPUT_MODE_STATE_INIT == mState) {
+            if (!cvbsMode) {
+                mTxAuth->start();
+            }
         }
     }
 
@@ -2557,6 +2561,10 @@ bool ModePolicy::isConnected() {
 
 bool ModePolicy::isVMXCertification() {
     return sys_get_bool_prop(PROP_VMX, false);
+}
+
+bool ModePolicy::isHDCPDisable() {
+    return sys_get_bool_prop(PROP_HDCP_DISABLE, false);
 }
 
 bool ModePolicy::isHdmiEdidParseOK() {

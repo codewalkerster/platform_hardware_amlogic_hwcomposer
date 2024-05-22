@@ -80,6 +80,7 @@
 #define PROP_DEEPCOLOR_CTL              "persist.sys.open.deepcolor" // 8, 10, 12
 #define PROP_PIXFMT                     "persist.sys.open.pixfmt" // rgb, ycbcr
 #define PROP_VMX                        "persist.vendor.sys.vmx"
+#define PROP_HDCP_DISABLE               "persist.vendor.sys.hdcp.disable"
 
 #define SYS_DISPLAY_RESOLUTION          "/sys/class/video/device_resolution"
 
@@ -334,6 +335,7 @@ private:
     void setSourceDisplay(output_mode_state state);
     bool setSourceOutputMode(const char* outputmode, bool force = false);
     bool isVMXCertification();
+    bool isHDCPDisable();
     bool isConnected();
     bool isHdmiUsed(void);
 
