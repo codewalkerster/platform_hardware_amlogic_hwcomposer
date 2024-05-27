@@ -186,6 +186,7 @@ public:
     virtual hwc2_error_t presentVtVideo(int32_t* outPresentFence);
 
     virtual void handleVtThread();
+    virtual void handleVtThreadLocked();
     virtual void setVtLayersPresentTime();
     virtual void releaseVtLayers();
     virtual bool handleVtDisplayConnection();

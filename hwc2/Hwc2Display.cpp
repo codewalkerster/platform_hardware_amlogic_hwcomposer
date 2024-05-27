@@ -422,6 +422,7 @@ void Hwc2Display::onHotplug(bool connected) {
 
     {
         std::lock_guard<std::mutex> lock(mMutex);
+        std::lock_guard<std::mutex> vtLock(mVtMutex);
         if (connected) {
             if (mConnector && mConnector->getType() != DRM_MODE_CONNECTOR_HDMIA) {
                 mOutsideChanged = true;
@@ -429,7 +430,7 @@ void Hwc2Display::onHotplug(bool connected) {
                 mObserver->refresh();
             }
             mSignalHpd = true;
-            handleVtThread();
+            handleVtThreadLocked();
             return;
         } else {
             if (!mModePolicy.get()) {
@@ -536,7 +537,7 @@ void Hwc2Display::cleanupBeforeDestroy() {
         // reset bitmap
         if (mLayersBitmap)
             mLayersBitmap->reset();
-        handleVtThread();
+        handleVtThreadLocked();
     }
 }
 
@@ -721,7 +722,7 @@ hwc2_error_t Hwc2Display::destroyLayer(hwc2_layer_t  inLayer) {
             __func__, mDisplayId, inLayer);
     mLayers.erase(inLayer);
 
-    handleVtThread();
+    handleVtThreadLocked();
     if (layer && layer->isVtBuffer())
         layer->releaseVtResource();
     destroyLayerId(inLayer);
@@ -2699,6 +2700,11 @@ void Hwc2Display::askSurfaceFlingerRefresh() {
 }
 
 void Hwc2Display::handleVtThread() {
+    std::lock_guard<std::mutex> vtLock(mVtMutex);
+    handleVtThreadLocked();
+}
+
+void Hwc2Display::handleVtThreadLocked() {
     bool haveVtLayer = false;
 
     for (auto it = mLayers.begin(); it != mLayers.end(); it++) {
