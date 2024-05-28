@@ -139,7 +139,7 @@ int32_t RealModeMgr::updateActiveConfig(drm_mode_info_t activeMode) {
             largestUsedModeId = configId;
 
         if (strncmp(activeMode.name, it->second.name, DRM_DISPLAY_MODE_LEN) == 0 &&
-            fabs(activeMode.refreshRate - it->second.refreshRate) < 1e-2) {
+            fabs(activeMode.refreshRate - it->second.refreshRate) < 0.001) {
             mActiveConfigId = it->first;
             MESON_LOGV("%s activeConfigId = %d", __func__, mActiveConfigId);
             return HWC2_ERROR_NONE;
@@ -542,11 +542,6 @@ void RealModeMgr::dynamicMapMode(std::string mode) {
 // The request config is the same group of the latest active config
 bool RealModeMgr::isSeamlessSwitch(uint32_t config) {
     std::map<uint32_t, drm_mode_info_t>::iterator it = mModes.find(config);
-
-    // same as the current active config
-    if (config == mActiveConfigId) {
-        return false;
-    }
 
     if (it != mModes.end()) {
         drm_mode_info_t cfg = it->second;
