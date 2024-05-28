@@ -1607,7 +1607,13 @@ void ModePolicy::setALLMMode(int state) {
             if (mConnector->supportVrr()) {
                 MESON_LOGI("%s: enable QMS Vrr", __func__);
                 mCrtc->setEnableVrr(true);
-                setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
+                drm_mode_info_t brrMode;
+                if (findBrrMode(mCurrentMode, brrMode) && !strcmp(mCurrentMode, brrMode.name)
+                    && mConnector->isVrrGroupedMode(brrMode)) {
+                    mCrtc->setMode(brrMode, true);
+                } else {
+                    setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
+                }
             }
             break;
         case 1:
@@ -1619,11 +1625,18 @@ void ModePolicy::setALLMMode(int state) {
                 disableDolbyVision();
                 sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "-1");
             }
+            getDisplayMode(mCurrentMode);
             //2. if has qms support, then disable qms
             if (mConnector->supportVrr()) {
                 MESON_LOGI("%s: disable QMS Vrr", __func__);
                 mCrtc->setEnableVrr(false);
-                setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
+                drm_mode_info_t brrMode;
+                if (findBrrMode(mCurrentMode, brrMode) && !strcmp(mCurrentMode, brrMode.name)
+                    && mConnector->isVrrGroupedMode(brrMode)) {
+                    mCrtc->setMode(brrMode, true);
+                } else {
+                    setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
+                }
             }
             //3. enable allm
             sysfs_set_string(AUTO_LOW_LATENCY_MODE, ALLM_MODE[2]);
