@@ -482,9 +482,9 @@ bool DrmConnector::checkFracMode(const drm_mode_info_t & mode) {
 
     // only check frac refresh rate
     if (mode.refreshRate != REFRESH_25kHZ
-            && mode.refreshRate != REFRESH_50kHZ) {
-        [[maybe_unused]] bool currentIsFrac =
-            sysfs_get_int(HDMI_FRAC_RATE_POLICY, 1) == 1 ? true : false;
+            && mode.refreshRate != REFRESH_50kHZ
+            && mode.refreshRate != REFRESH_100kHZ) {
+        bool preferredFrac = sys_get_bool_prop("persist.vendor.hwc.preferredFrac", true);
         bool modeIsFrac =
             std::find(mFracRefreshRates.begin(), mFracRefreshRates.end(),
                     mode.refreshRate) != mFracRefreshRates.end();
@@ -493,7 +493,7 @@ bool DrmConnector::checkFracMode(const drm_mode_info_t & mode) {
             return !modeIsFrac;
         }
 
-        return (currentIsFrac && modeIsFrac) || (!currentIsFrac && !modeIsFrac);
+        return (preferredFrac && modeIsFrac) || (!preferredFrac && !modeIsFrac);
     }
 
     return true;

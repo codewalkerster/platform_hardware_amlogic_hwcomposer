@@ -825,8 +825,13 @@ int32_t ModePolicy::clearBootConfig() {
 
     //save hdmi resolution to env
     setBootEnv(UBOOTENV_HDMIMODE, "none");
+
     //need to keep the same value with the defaul value
-    setBootEnv(UBOOTENV_FRAC_RATE_POLICY, "1");
+    bool preferredFrac = sys_get_bool_prop("persist.vendor.hwc.preferredFrac", true);
+    if (mConnector->supportVrr()) {
+        preferredFrac = false;
+    }
+    setBootEnv(UBOOTENV_FRAC_RATE_POLICY, preferredFrac ? "1" : "0");
 
     return 0;
 }
