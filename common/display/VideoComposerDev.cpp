@@ -76,7 +76,13 @@ int32_t VideoComposerDev::setFrames(
     for (int i = 0; i < composefbs.size(); i++) {
         isBlackBuffer = false;
         fb = composefbs[i];
+        if (mVideoFramesInfo.frame_count >= MAX_LAYER_COUNT) {
+            MESON_LOGW("VideoComposerDev(%d) setframes, More than Max DI video layers, skip %" PRIu64 ", !!!",
+                    mDrvFd, fb->mId);
+            continue;
+        }
         vFrameInfo = &mVideoFramesInfo.frame_info[mVideoFramesInfo.frame_count];
+        vFrameInfo->composer_fen_fd = -1;
         buffer_handle_t buf = fb->mBufferHandle;
         drm_fb_type_t fbType = fb->getFbType();
 
