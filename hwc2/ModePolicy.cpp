@@ -1871,6 +1871,7 @@ int32_t ModePolicy::getPreferredHdrConversionType(void) {
             drm_hdr_capabilities hdrCaps;
             mConnector->getHdrCapabilities(&hdrCaps);
 
+            //system-preferred conversion
             if (isAuto) {
                 if (hdrCaps.DolbyVisionSupported) {
                     if (containHLGType && containHDR10Type && containDVType) {
@@ -1929,6 +1930,7 @@ int32_t ModePolicy::getPreferredHdrConversionType(void) {
                     }
                 }
             } else {
+                //force conversion
                 if (containDVType) {
                     if (hdrCaps.DolbyVisionSupported) {
                         mHdr_policy   = MESON_HDR_POLICY_SINK;
@@ -1972,6 +1974,41 @@ int32_t ModePolicy::getPreferredHdrConversionType(void) {
                 !isTvSupportHDR()) {
                 outHdrConversionType = DRM_INVALID;  //force sdr
             }
+
+            //If force outHdrConversionType not support, passthrough be used
+            if (!isAuto && outHdrConversionType != -1) {
+                meson_hdr_priority_e priority = MESON_SDR_PRIORITY;
+                switch (outHdrConversionType) {
+                    case DRM_DOLBY_VISION: {
+                        priority = MESON_DOLBY_VISION_PRIORITY;
+                        break;
+                    }
+                    case DRM_HDR10:{
+                        priority = MESON_HDR10_PRIORITY;
+                        break;
+                    }
+                    case DRM_HLG:{
+                        priority = MESON_HDR10_PRIORITY;
+                        break;
+                    }
+                    case DRM_INVALID: {
+                        priority = MESON_SDR_PRIORITY;
+                        break;
+                    }
+                    default:
+                        MESON_LOGE("setHdrConversionStrategy: error type[%d]", outHdrConversionType);
+                        break;
+                }
+
+                getDisplayMode(mCurrentMode);
+                meson_mode_set_policy_input(mModeConType, &mConData);
+                if (meson_mode_support_mode(mModeConType, priority, mCurrentMode) != 0) {
+                    MESON_LOGD("mCurrentMode:%s not support outHdrConversionType:%s", mCurrentMode, hdrConversionTypeToString(outHdrConversionType));
+                    mHdr_policy   = MESON_HDR_POLICY_SOURCE;
+                    mHdr_priority = MESON_G_DV_HDR10_HLG;
+                    outHdrConversionType = -1;
+                }
+            }
         }
     }
 
@@ -1998,53 +2035,17 @@ int32_t ModePolicy::setHdrConversionPolicy(bool passthrough, int32_t forceType) 
         getDisplayMode(mCurrentMode);
         modeChanged = setSourceOutputMode(mCurrentMode);
     } else {
-        std::string type = FORCE_DV;
-        meson_hdr_priority_e priority = MESON_DOLBY_VISION_PRIORITY;
-        switch (forceType) {
-            case DRM_DOLBY_VISION: {
-                priority = MESON_DOLBY_VISION_PRIORITY;
-                type = FORCE_DV;
-                break;
-            }
-            case DRM_HDR10:{
-                priority = MESON_HDR10_PRIORITY;
-                type = FORCE_HDR10;
-                break;
-            }
-            case DRM_HLG:{
-                priority = MESON_HDR10_PRIORITY;
-                type = FORCE_HLG;
-                break;
-            }
-            case DRM_INVALID: {
-                priority = MESON_SDR_PRIORITY;
-                type = DV_DISABLE_FORCE_SDR;
-                break;
-            }
-            default:
-                MESON_LOGE("setHdrConversionStrategy: error type[%d]", forceType);
-                ret = HWC2_ERROR_UNSUPPORTED;
-                break;
-        }
+        char hdr_policy[MESON_MODE_LEN] = {0};
+        sprintf(hdr_policy, "%d", mHdr_policy);
+        setBootEnv(UBOOTENV_HDR_POLICY, hdr_policy);
 
-        if (!ret) {
-            getDisplayMode(mCurrentMode);
-            meson_mode_set_policy_input(mModeConType, &mConData);
-            if (!meson_mode_support_mode(mModeConType, priority, mCurrentMode)) {
-                char hdr_policy[MESON_MODE_LEN] = {0};
-                sprintf(hdr_policy, "%d", mHdr_policy);
-                setBootEnv(UBOOTENV_HDR_POLICY, hdr_policy);
+        char hdr_priority[MESON_MODE_LEN] = {0};
+        sprintf(hdr_priority, "%d", mHdr_priority);
+        setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
 
-                char hdr_priority[MESON_MODE_LEN] = {0};
-                sprintf(hdr_priority, "%d", mHdr_priority);
-                setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
-
-                modeChanged = setSourceOutputMode(mCurrentMode);
-            } else {
-                MESON_LOGW("%s mode check failed\n", __func__);
-                ret = HWC2_ERROR_UNSUPPORTED;
-            }
-        }
+        // set current hdmi mode
+        getDisplayMode(mCurrentMode);
+        modeChanged = setSourceOutputMode(mCurrentMode);
     }
 
     if (!modeChanged) {
@@ -2715,6 +2716,11 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
         mState = state;
         mConData.state = static_cast<meson_mode_state>(state);
 
+        //getConnectorData must call before getPreferredHdrConversionType
+        getConnectorData(&mConData, &mDvInfo);
+        //must use hdmimode as current mode for boot and hdmi plug in/resume
+        strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
+
         auto hdrConversionType = -1;
         hdrConversionType = getPreferredHdrConversionType();
         //Match content Dynamic range or invalid case
@@ -2734,10 +2740,12 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
             setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
         }
 
-        getConnectorData(&mConData, &mDvInfo);
+        char hdr_policy[MESON_MODE_LEN] = {0};
+        getHdrStrategy(hdr_policy);
+        mConData.hdr_info.hdr_policy = (meson_hdr_policy_e)strtol(hdr_policy, NULL, 10);
 
-        strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
-     }
+        mConData.hdr_info.hdr_priority = (meson_hdr_priority_e)getHdrPriority();
+    }
 
     //3. hdmi edid parse error and hpd = 1
     //set default reolsution and color format
