@@ -513,6 +513,27 @@ bool DrmConnector:: isTvSupportALLM() {
     return sysfs_get_int(HDMI_TX_ALLM_MODE, 0) == 1 ? true : false;
 }
 
+bool DrmConnector::isVrrGroupedMode(const drm_mode_info_t & mode) {
+    bool ret = true;
+    int count = 0;
+    drm_mode_info_t mesonMode;
+    for (auto it = mMesonModes.begin(); it != mMesonModes.end(); ++it) {
+        if (strncmp(it->second.name, mode.name, DRM_DISPLAY_MODE_LEN) == 0) {
+            mesonMode = it->second;
+            break;
+        }
+    }
+    for (auto it = mMesonModes.begin(); it != mMesonModes.end(); ++it) {
+        if (it->second.pixelW == mesonMode.pixelW && it->second.pixelH == mesonMode.pixelH
+            && mesonMode.groupId == it->second.groupId) {
+            count++;
+        }
+    }
+    if (count <= 1)
+        ret = false;
+    return ret;
+}
+
 int32_t DrmConnector::getIdentificationData(std::vector<uint8_t>& idOut) {
     int32_t ret = 0;
 

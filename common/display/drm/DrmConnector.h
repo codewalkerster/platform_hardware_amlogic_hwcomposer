@@ -60,6 +60,7 @@ public:
     int32_t setHDMIContentType(uint32_t contentType);
 
     bool isTvSupportALLM();
+    bool isVrrGroupedMode(const drm_mode_info_t& mode) override;
     bool supportSourceLed();
     bool supportSinkLed();
     int32_t setAVMute(uint32_t mute);

@@ -50,6 +50,7 @@ public:
     virtual uint32_t getId() { return mId;};
 
     virtual bool isTvSupportALLM();
+    virtual bool isVrrGroupedMode(const drm_mode_info_t& mode __unused) { return false;};
 
 protected:
     virtual void loadPhysicalSize();

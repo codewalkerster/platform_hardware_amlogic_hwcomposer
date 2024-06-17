@@ -314,7 +314,11 @@ int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
     // TODO: support disable it when have UI switch
     // TODO: remove single display limit when dual display support boot conifg
     if (connector->supportVrr() && HWC_DISPLAY_NUM == 1) {
-        enableVrr = mEnableVrr ? 1 : 0;
+        bool modeIsVrrMode = true;
+        if (updateBrr) {
+             modeIsVrrMode = connector->isVrrGroupedMode(mode);
+        }
+        enableVrr = (mEnableVrr && modeIsVrrMode) ? 1 : 0;
 
         mBrrUpdate->setValue(updateBrr);
         mBrrUpdate->apply(req);

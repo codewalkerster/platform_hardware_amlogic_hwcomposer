@@ -88,6 +88,7 @@ public:
     virtual void dump(String8 & dumpstr) = 0;
 
     virtual bool isTvSupportALLM() = 0;
+    virtual bool isVrrGroupedMode(const drm_mode_info_t& mode) = 0;
     virtual bool supportSourceLed() { return false; };
     virtual bool supportSinkLed() { return false; };
 
