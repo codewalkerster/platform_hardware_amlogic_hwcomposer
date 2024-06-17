@@ -1714,7 +1714,17 @@ int MultiplanesWithDiComposition::commit() {
         }
     }
 
-    auto planeIt = mOtherPlanes.begin();
+    /* Blank un-used plane. */
+    auto planeIt = mHwcVideoPlanes.begin();
+    for (; planeIt != mHwcVideoPlanes.end(); ++planeIt) {
+        mOtherPlanes.push_back(*planeIt);
+    }
+    planeIt = mOsdPlanes.begin();
+    for (; planeIt != mOsdPlanes.end(); ++planeIt) {
+        mOtherPlanes.push_back(*planeIt);
+    }
+
+    planeIt = mOtherPlanes.begin();
     for (; planeIt != mOtherPlanes.end(); ++planeIt) {
         dumpUnusedPlane(*planeIt, BLANK_FOR_NO_CONTENT);
 
