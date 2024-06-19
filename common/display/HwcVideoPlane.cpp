@@ -180,9 +180,10 @@ int32_t HwcVideoPlane::getVideodisableStatus(int& status) {
         return -1;
     }
 
-    if ((ret = read(fd, buf, sizeof(buf))) < 0) {
+    if ((ret = read(fd, buf, sizeof(buf) - 1)) < 0) {
         MESON_LOGE("get video disable failed, ret=%d error=%s", ret, strerror(errno));
     } else {
+        buf[sizeof(buf) - 1] = '\0';
         status = strtol(buf, NULL, 10);
         ret = 0;
     }
