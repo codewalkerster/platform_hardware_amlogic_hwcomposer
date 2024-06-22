@@ -29,75 +29,12 @@
 
 #define EDID_MAX_SIZE                   2049
 
-#define COLOR_YCBCR444_12BIT             "444,12bit"
-#define COLOR_YCBCR444_10BIT             "444,10bit"
-#define COLOR_YCBCR444_8BIT              "444,8bit"
-#define COLOR_YCBCR422_12BIT             "422,12bit"
-#define COLOR_YCBCR422_10BIT             "422,10bit"
-#define COLOR_YCBCR422_8BIT              "422,8bit"
-#define COLOR_YCBCR420_12BIT             "420,12bit"
-#define COLOR_YCBCR420_10BIT             "420,10bit"
-#define COLOR_YCBCR420_8BIT              "420,8bit"
-#define COLOR_RGB_12BIT                  "rgb,12bit"
-#define COLOR_RGB_10BIT                  "rgb,10bit"
-#define COLOR_RGB_8BIT                   "rgb,8bit"
-
 enum {
     DISPLAY_TYPE_NONE                   = 0,
     DISPLAY_TYPE_TABLET                 = 1,
     DISPLAY_TYPE_MBOX                   = 2,
     DISPLAY_TYPE_TV                     = 3,
     DISPLAY_TYPE_REPEATER               = 4
-};
-
-/* filter the interlace mode */
-static const char* DISPLAY_MODE_LIST[] = {
-    MODE_480P,
-    MODE_640x480P,
-    MODE_576P,
-    MODE_720P,
-    MODE_720P50HZ,
-    MODE_720P100HZ,
-    MODE_720P120HZ,
-    MODE_1080P24HZ,
-    MODE_1080P25HZ,
-    MODE_1080P30HZ,
-    MODE_1080I50HZ,
-    MODE_1080P50HZ,
-    MODE_1080I,
-    MODE_1080P,
-    MODE_1080P100HZ,
-    MODE_1080P120HZ,
-    MODE_1440P50HZ,
-    MODE_1440P60HZ,
-    MODE_1440P100HZ,
-    MODE_1440P120HZ,
-    MODE_4K2K24HZ,
-    MODE_4K2K25HZ,
-    MODE_4K2K30HZ,
-    MODE_4K2K50HZ,
-    MODE_4K2K60HZ,
-    MODE_4K2K100HZ,
-    MODE_4K2K120HZ,
-    MODE_4K2KSMPTE24HZ,
-    MODE_4K2KSMPTE30HZ,
-    MODE_4K2KSMPTE50HZ,
-    MODE_4K2KSMPTE60HZ,
-    MODE_4K2KSMPTE100HZ,
-    MODE_4K2KSMPTE120HZ,
-    MODE_8K4K24HZ,
-    MODE_8K4K25HZ,
-    MODE_8K4K30HZ,
-    MODE_8K4K48HZ,
-    MODE_8K4K50HZ,
-    MODE_8K4K60HZ,
-    MODE_768P,
-    MODE_PANEL,
-    MODE_480CVBS,
-    MODE_576CVBS,
-    MODE_PAL_M,
-    MODE_PAL_N,
-    MODE_NTSC_M,
 };
 
 static const char* DV_MODE_TYPE[] = {
@@ -451,7 +388,11 @@ bool ModePolicy::isHdrResolutionPriority() {
 }
 
 bool ModePolicy::isFrameratePriority() {
-    return sys_get_bool_prop(PROP_HDMI_FRAMERATE_PRIORITY, true);
+    char isFrameratePriority[MESON_MODE_LEN] = {0};
+    if (DISPLAY_TYPE_TV == mDisplayType) {
+        return false;
+    }
+    return !getBootEnv(UBOOTENV_FRAMERATE_PRIORITY, isFrameratePriority) || strcmp(isFrameratePriority, "true") == 0;
 }
 
 bool ModePolicy::isSupport4K() {
@@ -669,9 +610,10 @@ int32_t ModePolicy::getConnectorData(struct meson_policy_in* data, hdmi_dv_info_
     filterHdmiDispcap(&data->con_info);
 #endif
 
-    data->con_info.is_support4k = isSupport4K();
-    data->con_info.is_support4k30HZ = isSupport4K30Hz();
-    data->con_info.is_deepcolor = isSupportDeepColor();
+    data->con_info.is_support4k         = isSupport4K();
+    data->con_info.is_support4k30HZ     = isSupport4K30Hz();
+    data->con_info.is_deepcolor         = isSupportDeepColor();
+    data->con_info.isframeratepriority  = isFrameratePriority();
 
     return 0;
 }
@@ -836,8 +778,8 @@ void ModePolicy::dump(String8 &dumpstr) {
     dumpstr.appendFormat("MesonHdrPriority: %s \n", meson_hdrPriorityToString(mHdr_priority));
     dumpstr.appendFormat("MesonHdrPolicy: %s \n", meson_hdrPolicyToString(mHdr_policy));
     dumpstr.appendFormat("DV enable: %s \n", mDvInfo.dv_enable);
-    dumpstr.appendFormat("Policy Out :displaymode: %s, deepcolor: %s, dv_type: %d\n",
-        mSceneOutInfo.displaymode, mSceneOutInfo.deepcolor, mSceneOutInfo.dv_type);
+    dumpstr.appendFormat("Policy Out :displaymode: %s, deepcolor: %s, amdv_type: %d\n",
+        mSceneOutInfo.displaymode, mSceneOutInfo.deepcolor, mSceneOutInfo.amdv_type);
 
     /* dump detail policy in info*/
     if (DebugHelper::getInstance().dumpDetailInfo()) {
@@ -1076,20 +1018,20 @@ void ModePolicy::saveHdmiParamToEnv() {
             setBootEnv(UBOOTENV_OUTPUTMODE, (char *)outputMode);
         }
 
-        // 2.3 save amdolby status/dv_type
+        // 2.3 save amdolby status/amdv_type
         // In follow sink mode: 0:disable 1:STD(or enable dv) 2:LL YUV 3: LL RGB
         // In follow source mode: dv is disable  in uboot.
         if (isMboxSupportDolbyVision()) {
-            sprintf(dvstatus, "%d", mSceneOutInfo.dv_type);
+            sprintf(dvstatus, "%d", mSceneOutInfo.amdv_type);
             setBootEnv(UBOOTENV_DOLBYSTATUS, dvstatus);
             setBootEnv(UBOOTENV_DV_ENABLE, mDvInfo.dv_enable);
 
-            MESON_LOGI("dvstatus %s dv_type %d dv_enable %s\n",
-                dvstatus, mSceneOutInfo.dv_type, mDvInfo.dv_enable);
+            MESON_LOGI("dvstatus %s amdv_type %d dv_enable %s\n",
+                dvstatus, mSceneOutInfo.amdv_type, mDvInfo.dv_enable);
 
         } else {
-            MESON_LOGI("MBOX is not support dv, dvstatus %s dv_type %d dv_enable %s\n",
-                dvstatus, mSceneOutInfo.dv_type, mDvInfo.dv_enable);
+            MESON_LOGI("MBOX is not support dv, dvstatus %s amdv_type %d dv_enable %s\n",
+                dvstatus, mSceneOutInfo.amdv_type, mDvInfo.dv_enable);
         }
 
         MESON_LOGI("colorattr: %s, outputMode %s, cd %s, cs %s\n",
@@ -1184,12 +1126,10 @@ void ModePolicy::enableDolbyVision(int DvMode) {
     initGraphicsPriority();
 }
 
-void ModePolicy::disableDolbyVision(int DvMode) {
+void ModePolicy::disableDolbyVision() {
     //char tvmode[MESON_MODE_LEN]   = {0};
     int  check_status_count = 0;
-    [[maybe_unused]] int dv_type = DvMode;
 
-    MESON_LOGI("dv_type %d", dv_type);
     strlcpy(mDvInfo.dv_enable, "0", sizeof(mDvInfo.dv_enable));
 
     //2. update sysfs
@@ -1643,21 +1583,21 @@ void ModePolicy::setALLMMode(int state) {
                     if (strstr(mConData.hdr_info.dv_deepcolor, "DV_RGB_444_8BIT") != NULL
                         && strstr(cur_ColorAttribute.c_str(), "444,8bit") != NULL) {
                         enableDolbyVision(DOLBY_VISION_SET_ENABLE);
-                        mSceneOutInfo.dv_type = DOLBY_VISION_SET_ENABLE;
+                        mSceneOutInfo.amdv_type = DOLBY_VISION_SET_ENABLE;
                     } else if (strstr(mConData.hdr_info.dv_deepcolor, "LL_YCbCr_422_12BIT") != NULL
                             && strstr(cur_ColorAttribute.c_str(), "422,12bit") != NULL) {
                         enableDolbyVision(DOLBY_VISION_SET_ENABLE_LL_YUV);
-                        mSceneOutInfo.dv_type = DOLBY_VISION_SET_ENABLE_LL_YUV;
+                        mSceneOutInfo.amdv_type = DOLBY_VISION_SET_ENABLE_LL_YUV;
                     } else {
                         SYS_LOGI("can't enable dv for dv_deepcolor: %s and curColorAttribute: %s\n",
                             mConData.hdr_info.dv_deepcolor, cur_ColorAttribute.c_str());
                     }
                 } else if (!strcmp(ubootenv_dv_type, "2") && strstr(cur_ColorAttribute.c_str(), "422,12bit") != NULL) {
                     enableDolbyVision(DOLBY_VISION_SET_ENABLE_LL_YUV);
-                    mSceneOutInfo.dv_type = DOLBY_VISION_SET_ENABLE_LL_YUV;
+                    mSceneOutInfo.amdv_type = DOLBY_VISION_SET_ENABLE_LL_YUV;
                 } else if (!strcmp(ubootenv_dv_type, "1") && strstr(cur_ColorAttribute.c_str(), "444,8bit") != NULL) {
                     enableDolbyVision(DOLBY_VISION_SET_ENABLE);
-                    mSceneOutInfo.dv_type = DOLBY_VISION_SET_ENABLE;
+                    mSceneOutInfo.amdv_type = DOLBY_VISION_SET_ENABLE;
                 } else {
                     SYS_LOGI("can't enable dv for curColorAttribute: %s\n", cur_ColorAttribute.c_str());
                 }
@@ -1673,10 +1613,10 @@ void ModePolicy::setALLMMode(int state) {
         case 1:
             //1. when TV support dv and dv is enable
             if (isTVSupportDV && isDolbyVisionEnable()) {
-                mSceneOutInfo.dv_type = DOLBY_VISION_SET_DISABLE;
+                mSceneOutInfo.amdv_type = DOLBY_VISION_SET_DISABLE;
                 // disable the doblyvision when ALLM enable
                 sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "1");
-                disableDolbyVision(DOLBY_VISION_SET_DISABLE);
+                disableDolbyVision();
                 sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "-1");
             }
             //2. if has qms support, then disable qms
@@ -2179,7 +2119,7 @@ bool ModePolicy::applyDisplaySetting(bool force) {
         if (strstr(cur_dv_policy.c_str(), hdr_policy) == NULL) {
             MESON_LOGI("set dv policy from:%s to %s\n", cur_dv_policy.c_str(), hdr_policy);
             hdr_policy_change = true;
-        } else if ((mSceneOutInfo.dv_type != DOLBY_VISION_SET_DISABLE)
+        } else if ((mSceneOutInfo.amdv_type != DOLBY_VISION_SET_DISABLE)
                 && (!strcmp(hdr_policy, DV_POLICY_FORCE_MODE)
                     && (strstr(meson_dvModeTypeToString(cur_dv_mode.c_str()), hdr_force_mode) == NULL))) {
             MESON_LOGI("set dv force mode from:%s to %s\n", meson_dvModeTypeToString(cur_dv_mode.c_str()), hdr_force_mode);
@@ -2201,29 +2141,29 @@ bool ModePolicy::applyDisplaySetting(bool force) {
     }
 
     // 4. check amdolby vision
-    int  dv_type  = DOLBY_VISION_SET_DISABLE;
+    int  amdv_type  = DOLBY_VISION_SET_DISABLE;
     bool dv_change  = false;
     bool dvmode_change = false;
 
-    dv_type   = mSceneOutInfo.dv_type;
-    dv_change = checkDolbyVisionStatusChanged(dv_type);
+    amdv_type   = mSceneOutInfo.amdv_type;
+    dv_change = checkDolbyVisionStatusChanged(amdv_type);
     if (isMboxSupportDolbyVision() && dv_change) {
         //4.1 set avmute when signal change at boot
         if ((OUTPUT_MODE_STATE_INIT == mState)
             && (strstr(hdr_policy, MESON_HDR_POLICY[MESON_HDR_POLICY_SINK]))) {
             sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "1");
         }
-        //4.2 Set dv_type by scene
+        //4.2 Set amdv_type by scene
         //4.2.1 set dvmode_change to true when dv change at UI switch
         //set avmute-close phy>-set hdr/dv policy>set mode-clear avmute ---enable hdcp
         if (OUTPUT_MODE_STATE_SWITCH == mState) {
             dvmode_change = true;
         } else {
             //4.2.2 In other scenarios, set DV directly
-            if (DOLBY_VISION_SET_DISABLE != dv_type) {//enable or disable dolby vision core
-                enableDolbyVision(dv_type);
+            if (DOLBY_VISION_SET_DISABLE != amdv_type) {//enable or disable dolby vision core
+                enableDolbyVision(amdv_type);
             } else {
-                disableDolbyVision(dv_type);
+                disableDolbyVision();
             }
         }
     } else {
@@ -2359,10 +2299,10 @@ bool ModePolicy::applyDisplaySetting(bool force) {
 
         //apply enable or disable dolby vision core
         if (dvmode_change) {
-            if (DOLBY_VISION_SET_DISABLE != dv_type) {
-                enableDolbyVision(dv_type);
+            if (DOLBY_VISION_SET_DISABLE != amdv_type) {
+                enableDolbyVision(amdv_type);
             } else {
-                disableDolbyVision(dv_type);
+                disableDolbyVision();
             }
         }
 
