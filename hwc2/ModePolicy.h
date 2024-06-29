@@ -186,12 +186,15 @@
 #define FULL_HEIGHT_1080                1080
 
 typedef enum {
-    OUTPUT_MODE_STATE_INIT               = 0,
-    OUTPUT_MODE_STATE_POWER              = 1,//hot plug
-    OUTPUT_MODE_STATE_SWITCH             = 2,//user switch the mode
-    OUTPUT_MODE_STATE_SWITCH_ADAPTER     = 3,//video auto switch the mode
-    OUTPUT_MODE_STATE_RESERVE            = 4,
-    OUTPUT_MODE_STATE_ADAPTER_END        = 5 //end hint video auto switch the mode
+    OUTPUT_MODE_STATE_INIT                 = 0, /* devices boot */
+    OUTPUT_MODE_STATE_POWER                = 1, /* hot plug/suspend/resume */
+    OUTPUT_MODE_STATE_SWITCH               = 2, /* user switch the mode */
+    OUTPUT_MODE_STATE_SWITCH_ADAPTER       = 3, /* video auto switch the mode */
+    OUTPUT_MODE_STATE_SWITCH_HDR_STRATEGY  = 4, /* user switch hdr stragety */
+    OUTPUT_MODE_STATE_SWITCH_AMDV          = 5, /* user switch dv mode */
+    OUTPUT_MODE_STATE_SWITCH_COLOR_FORMAT  = 6, /* user switch color format */
+    OUTPUT_MODE_STATE_SWITCH_ALLM          = 7, /* user switch allm */
+    OUTPUT_MODE_STATE_ADAPTER_END          = 8 /* end hint video auto switch the mode */
 } output_mode_state;
 
 typedef enum {
@@ -266,9 +269,9 @@ private:
     void setBootEnv(const char* key, const char* value);
 
     // HDR functions
-    int32_t setHdrStrategy(int32_t policy, const char *type);
+    bool check_hdr_mode(const int32_t outHdrConversionType, char *mode);
+    void getPreferredHdrStrategy(char* value);
     void getHdrStrategy(char* value);
-    int32_t setHdrPriority(int32_t type);
     int32_t getHdrPriority();
     int32_t getCurrentHdrPriority(void);
     void gethdrforcemode(char* value);
@@ -335,7 +338,7 @@ private:
     bool applyDisplaySetting(bool force = false);
 
     void setSourceDisplay(output_mode_state state);
-    bool setSourceOutputMode(const char* outputmode, bool force = false);
+    bool setSourceOutputMode(const char* outputmode, output_mode_state state = OUTPUT_MODE_STATE_SWITCH);
     bool isVMXCertification();
     bool isHDCPDisable();
     bool isConnected();
@@ -383,6 +386,7 @@ private:
 
     std::map<int, std::string> mFilterEdid;
 
+    int32_t mHdrConversionType;
     int32_t mDisplayType;
     pthread_mutex_t mEnvLock;
 

@@ -300,36 +300,6 @@ void ModePolicy::getHdmiEdidStatus(char* edidstatus, int32_t len) {
     sysfs_get_string(DISPLAY_EDID_STATUS, edidstatus, len);
 }
 
-int32_t ModePolicy::setHdrStrategy(int32_t policy, const char *type) {
-    SYS_LOGI("%s type:%s policy:%s", __func__,
-            meson_hdrPolicyToString(policy), type);
-
-    //1. update env policy
-    std::string value = std::to_string(policy);
-    setBootEnv(UBOOTENV_HDR_POLICY, value.c_str());
-
-    int32_t priority = MESON_HDR10_PRIORITY;
-    value = std::to_string(MESON_HDR10_PRIORITY);
-    if (strstr(type, DV_DISABLE_FORCE_SDR)) {
-        priority = MESON_SDR_PRIORITY;
-        value = std::to_string(MESON_SDR_PRIORITY);
-    }
-
-    //2. set current hdmi mode
-    meson_mode_set_policy_input(mModeConType, &mConData);
-    getDisplayMode(mCurrentMode);
-
-    if (!meson_mode_support_mode(mModeConType, priority, mCurrentMode)) {
-        setBootEnv(UBOOTENV_HDR_FORCE_MODE, type);
-        setSourceOutputMode(mCurrentMode);
-    } else {
-        MESON_LOGD("%s mode check failed", __func__);
-        return -EINVAL;
-    }
-
-    return 0;
-}
-
 void ModePolicy::getHdrStrategy(char* value) {
     char hdr_policy[MESON_MODE_LEN] = {0};
 
@@ -346,24 +316,6 @@ void ModePolicy::getHdrStrategy(char* value) {
        strcpy(value, DV_POLICY_FORCE_MODE);
     }
     MESON_LOGI("get uboot HdrStrategy is [%s]", value);
-}
-
-int32_t ModePolicy::setHdrPriority(int32_t type) {
-    MESON_LOGI("setHdrPriority is [%s]\n", meson_hdrPriorityToString(type));
-
-    meson_mode_set_policy_input(mModeConType, &mConData);
-    getDisplayMode(mCurrentMode);
-
-    if (!meson_mode_support_mode(mModeConType, type, mCurrentMode)) {
-        std::string value = std::to_string(type);
-
-        setSourceOutputMode(mCurrentMode);
-    } else {
-        MESON_LOGD("%s mode check failed", __func__);
-        return -EINVAL;
-    }
-
-    return 0;
 }
 
 int32_t ModePolicy::getHdrPriority() {
@@ -539,9 +491,9 @@ void ModePolicy::getHdrUserInfo(meson_hdr_info_t *data) {
 
     data->hdr_priority = (meson_hdr_priority_e)getHdrPriority();
 
-    MESON_LOGI("hdr_policy:%d, hdr_priority :%d(0x%x), hdr_force_mode:%d\n",
-            data->hdr_policy,
-            data->hdr_priority, data->hdr_priority,
+    MESON_LOGI("hdr_policy:%s, hdr_priority :%s, hdr_force_mode:%d\n",
+            meson_hdrPolicyToString(data->hdr_policy),
+            meson_hdrPriorityToString(data->hdr_priority),
             data->hdr_force_mode);
 
     data->is_amdv_enable = isDolbyVisionEnable();
@@ -846,7 +798,7 @@ int32_t ModePolicy::clearUserDisplayConfig() {
 
     //2. set hdmi mode for trigger setting
     getDisplayMode(mCurrentMode);
-    setSourceOutputMode(mCurrentMode);
+    setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_COLOR_FORMAT);
 
     return 0;
 }
@@ -871,7 +823,7 @@ int32_t ModePolicy::setColorSpace(std::string &colorspace) {
     saveDeepColorAttr(mCurrentMode, colorspace.c_str());
 
     //2. set hdmi mode for trigger setting
-    setSourceOutputMode(mCurrentMode);
+    setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_COLOR_FORMAT);
 
     return 0;
 }
@@ -1610,7 +1562,7 @@ int32_t ModePolicy::setDvMode(std::string &dv_mode) {
         setBootEnv(UBOOTENV_DOLBYSTATUS, dv_mode.c_str());
 
         //2. set hdmi mode for trigger setting
-        setSourceOutputMode(mCurrentMode);
+        setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_AMDV);
     }
 
     return 0;
@@ -1715,7 +1667,7 @@ void ModePolicy::setALLMMode(int state) {
             if (mConnector->supportVrr()) {
                 MESON_LOGI("%s: enable QMS Vrr", __func__);
                 mCrtc->setEnableVrr(true);
-                setSourceOutputMode(mCurrentMode, true);
+                setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
             }
             break;
         case 1:
@@ -1731,7 +1683,7 @@ void ModePolicy::setALLMMode(int state) {
             if (mConnector->supportVrr()) {
                 MESON_LOGI("%s: disable QMS Vrr", __func__);
                 mCrtc->setEnableVrr(false);
-                setSourceOutputMode(mCurrentMode, true);
+                setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
             }
             //3. enable allm
             sysfs_set_string(AUTO_LOW_LATENCY_MODE, ALLM_MODE[2]);
@@ -1814,12 +1766,86 @@ void ModePolicy::setAllowedHdrTypes(uint32_t allowedHdrTypes, bool isAuto, bool 
     return;
 }
 
+/*
+ * get user preferred hdr strategy
+ */
+void ModePolicy::getPreferredHdrStrategy(char* value) {
+    char auto_policy[MESON_MODE_LEN] = {0};
+    memset(auto_policy, 0, MESON_MODE_LEN);
+    getBootEnv(UBOOTENV_HDR_PREFERRED_POLICY, auto_policy);
+
+    if (strstr(auto_policy, MESON_HDR_PREFERRED_POLICY[MESON_HDR_SYSTEM_PREFERRED])) {
+        strcpy(value, MESON_HDR_PREFERRED_POLICY[MESON_HDR_SYSTEM_PREFERRED]);
+    } else if (strstr(auto_policy, MESON_HDR_PREFERRED_POLICY[MESON_HDR_MATCH_CONTENT])) {
+        strcpy(value, MESON_HDR_PREFERRED_POLICY[MESON_HDR_MATCH_CONTENT]);
+    } else if (strstr(auto_policy, MESON_HDR_PREFERRED_POLICY[MESON_HDR_FORCE])) {
+        strcpy(value, MESON_HDR_PREFERRED_POLICY[MESON_HDR_FORCE]);
+    } else {
+        MESON_LOGI("%s no env use system preferred as default mode", __FUNCTION__);
+        strcpy(value, MESON_HDR_PREFERRED_POLICY[MESON_HDR_SYSTEM_PREFERRED]);
+    }
+
+    MESON_LOGI("%s is %s", __FUNCTION__, value);
+}
+
+/*
+ * check user preferred hdr support or not by current mode
+ */
+bool ModePolicy::check_hdr_mode(const int32_t outHdrConversionType, char *mode) {
+    bool support = true;
+    char auto_policy[MESON_MODE_LEN] = {0};
+    getPreferredHdrStrategy(auto_policy);
+
+    bool isAuto = true;
+    if (strstr(auto_policy, MESON_HDR_PREFERRED_POLICY[MESON_HDR_FORCE])) {
+        isAuto = false;
+    }
+
+    /*
+     * If force hdr mode not support by current mode, passthrough be used
+     */
+    if (!isAuto && outHdrConversionType != -1) {
+        meson_hdr_priority_e priority = MESON_SDR_PRIORITY;
+        switch (outHdrConversionType) {
+            case DRM_DOLBY_VISION: {
+                priority = MESON_DOLBY_VISION_PRIORITY;
+                break;
+            }
+            case DRM_HDR10:{
+                priority = MESON_HDR10_PRIORITY;
+                break;
+            }
+            case DRM_HLG:{
+                priority = MESON_HDR10_PRIORITY;
+                break;
+            }
+            case DRM_INVALID: {
+                priority = MESON_SDR_PRIORITY;
+                break;
+            }
+            default:
+                MESON_LOGE("%s error type[%d]", __FUNCTION__, outHdrConversionType);
+                break;
+        }
+
+        meson_mode_set_policy_input(mModeConType, &mConData);
+        if (meson_mode_support_mode(mModeConType, priority, mode) != 0) {
+            MESON_LOGD("mode:%s not support outHdrConversionType:%s", mode, hdrConversionTypeToString(outHdrConversionType));
+            mHdr_policy = MESON_HDR_POLICY_SOURCE;
+            support = false;
+        }
+    }
+
+    MESON_LOGI("%s mode:%s outHdrConversionType:%s support:%d", __FUNCTION__, mode, hdrConversionTypeToString(outHdrConversionType), support);
+
+    return support;
+}
+
 int32_t ModePolicy::getPreferredHdrConversionType(void) {
     int32_t outHdrConversionType = -1;
 
     char auto_policy[MESON_MODE_LEN] = {0};
-    memset(auto_policy, 0, MESON_MODE_LEN);
-    getBootEnv(UBOOTENV_HDR_PREFERRED_POLICY, auto_policy);
+    getPreferredHdrStrategy(auto_policy);
 
     //Match content Dynamic range
     if (strstr(auto_policy, MESON_HDR_PREFERRED_POLICY[MESON_HDR_MATCH_CONTENT])) {
@@ -1974,45 +2000,10 @@ int32_t ModePolicy::getPreferredHdrConversionType(void) {
                 !isTvSupportHDR()) {
                 outHdrConversionType = DRM_INVALID;  //force sdr
             }
-
-            //If force outHdrConversionType not support, passthrough be used
-            if (!isAuto && outHdrConversionType != -1) {
-                meson_hdr_priority_e priority = MESON_SDR_PRIORITY;
-                switch (outHdrConversionType) {
-                    case DRM_DOLBY_VISION: {
-                        priority = MESON_DOLBY_VISION_PRIORITY;
-                        break;
-                    }
-                    case DRM_HDR10:{
-                        priority = MESON_HDR10_PRIORITY;
-                        break;
-                    }
-                    case DRM_HLG:{
-                        priority = MESON_HDR10_PRIORITY;
-                        break;
-                    }
-                    case DRM_INVALID: {
-                        priority = MESON_SDR_PRIORITY;
-                        break;
-                    }
-                    default:
-                        MESON_LOGE("setHdrConversionStrategy: error type[%d]", outHdrConversionType);
-                        break;
-                }
-
-                getDisplayMode(mCurrentMode);
-                meson_mode_set_policy_input(mModeConType, &mConData);
-                if (meson_mode_support_mode(mModeConType, priority, mCurrentMode) != 0) {
-                    MESON_LOGD("mCurrentMode:%s not support outHdrConversionType:%s", mCurrentMode, hdrConversionTypeToString(outHdrConversionType));
-                    mHdr_policy   = MESON_HDR_POLICY_SOURCE;
-                    mHdr_priority = MESON_G_DV_HDR10_HLG;
-                    outHdrConversionType = -1;
-                }
-            }
         }
     }
 
-    MESON_LOGD("hdr_policy:%d hdr_priority:0x%x outHdrConversionType:%d ", mHdr_policy, mHdr_priority, outHdrConversionType);
+    MESON_LOGD("hdr_policy:%s hdr_priority:%s outHdrConversionType:%d ", meson_hdrPolicyToString(mHdr_policy), meson_hdrPriorityToString(mHdr_priority), outHdrConversionType);
     return outHdrConversionType;
 }
 
@@ -2025,6 +2016,8 @@ int32_t ModePolicy::setHdrConversionPolicy(bool passthrough, int32_t forceType) 
     MESON_LOGD("%s passthrough %d forceType %s",
             __func__, passthrough, hdrConversionTypeToString(forceType));
 
+    mHdrConversionType = forceType;
+
     if (passthrough || (forceType == -1)) {
         setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
 
@@ -2033,19 +2026,35 @@ int32_t ModePolicy::setHdrConversionPolicy(bool passthrough, int32_t forceType) 
         setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
         // set current hdmi mode
         getDisplayMode(mCurrentMode);
-        modeChanged = setSourceOutputMode(mCurrentMode);
+        modeChanged = setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_HDR_STRATEGY);
     } else {
-        char hdr_policy[MESON_MODE_LEN] = {0};
-        sprintf(hdr_policy, "%d", mHdr_policy);
-        setBootEnv(UBOOTENV_HDR_POLICY, hdr_policy);
+        /*
+         * check force hdr support or not by current mode
+         * if force hdr mode not support by current mode, passthrough be used
+         */
+        bool support = true;
+        getDisplayMode(mCurrentMode);
+        support = check_hdr_mode(forceType, mCurrentMode);
+
+        /*
+         * save new hdr policy and hdr priority to env
+         */
+        if (!support) {
+            setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
+        } else {
+            char hdr_policy[MESON_MODE_LEN] = {0};
+            sprintf(hdr_policy, "%d", mHdr_policy);
+            setBootEnv(UBOOTENV_HDR_POLICY, hdr_policy);
+        }
 
         char hdr_priority[MESON_MODE_LEN] = {0};
         sprintf(hdr_priority, "%d", mHdr_priority);
         setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
 
-        // set current hdmi mode
-        getDisplayMode(mCurrentMode);
-        modeChanged = setSourceOutputMode(mCurrentMode);
+        /*
+         * set current mode to trigger new setting be apply
+         */
+        modeChanged = setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_HDR_STRATEGY);
     }
 
     if (!modeChanged) {
@@ -2187,7 +2196,7 @@ bool ModePolicy::applyDisplaySetting(bool force) {
     hdr_priority = (meson_hdr_priority_e)getHdrPriority();
 
     if (cur_hdr_priority != hdr_priority) {
-        SYS_LOGI("set hdr priority from:%x to %x\n", cur_hdr_priority, hdr_priority);
+        SYS_LOGI("set hdr priority from:%s to %s\n", meson_hdrPriorityToString(cur_hdr_priority), meson_hdrPriorityToString(hdr_priority));
         hdr_priority_change = true;
     }
 
@@ -2716,15 +2725,9 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
         mState = state;
         mConData.state = static_cast<meson_mode_state>(state);
 
-        //getConnectorData must call before getPreferredHdrConversionType
-        getConnectorData(&mConData, &mDvInfo);
-        //must use hdmimode as current mode for boot and hdmi plug in/resume
-        strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
-
-        auto hdrConversionType = -1;
-        hdrConversionType = getPreferredHdrConversionType();
+        mHdrConversionType = getPreferredHdrConversionType();
         //Match content Dynamic range or invalid case
-        if (hdrConversionType == -1) {
+        if (mHdrConversionType == -1) {
             setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
 
             char hdr_priority[MESON_MODE_LEN] = {0};
@@ -2740,11 +2743,10 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
             setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
         }
 
-        char hdr_policy[MESON_MODE_LEN] = {0};
-        getHdrStrategy(hdr_policy);
-        mConData.hdr_info.hdr_policy = (meson_hdr_policy_e)strtol(hdr_policy, NULL, 10);
-
-        mConData.hdr_info.hdr_priority = (meson_hdr_priority_e)getHdrPriority();
+        //getConnectorData
+        getConnectorData(&mConData, &mDvInfo);
+        //must use hdmimode as current mode for boot and hdmi plug in/resume
+        strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
     }
 
     //3. hdmi edid parse error and hpd = 1
@@ -2766,30 +2768,82 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
     meson_mode_set_policy_input(mModeConType, &mConData);
     meson_mode_get_policy_output(mModeConType, &mSceneOutInfo);
 
+    /*
+     * check force hdr support or not by current mode
+     * if force hdr mode not support by current mode, passthrough be used
+     */
+    bool support = true;
+    support = check_hdr_mode(mHdrConversionType, mSceneOutInfo.displaymode);
+    if (!support) {
+        setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
+    }
     //5. apply settings to driver
     applyDisplaySetting();
 }
 
-bool ModePolicy::setSourceOutputMode(const char* outputmode, bool force) {
+bool ModePolicy::setSourceOutputMode(const char* outputmode, output_mode_state state) {
     std::lock_guard<std::mutex> lock(mMutex);
     bool ret = true;
 
     if (DISPLAY_TYPE_TV == mDisplayType) {
         setSinkOutputMode(outputmode, false);
     } else {
+       /*
+        * need to update hdr policy for switch resolution
+        */
+        if (state == OUTPUT_MODE_STATE_SWITCH) {
+            mHdrConversionType = getPreferredHdrConversionType();
+            /*
+             * Match content Dynamic range or invalid case
+             */
+            if (mHdrConversionType == -1) {
+                setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
+
+                char hdr_priority[MESON_MODE_LEN] = {0};
+                sprintf(hdr_priority, "%d", mHdr_priority);
+                setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
+            } else {
+                char hdr_policy[MESON_MODE_LEN] = {0};
+                sprintf(hdr_policy, "%d", mHdr_policy);
+                setBootEnv(UBOOTENV_HDR_POLICY, hdr_policy);
+
+                char hdr_priority[MESON_MODE_LEN] = {0};
+                sprintf(hdr_priority, "%d", mHdr_priority);
+                setBootEnv(UBOOTENV_HDR_PRIORITY, hdr_priority);
+            }
+        }
 
         getConnectorUserData(&mConData, &mDvInfo);
 
         getHdrUserInfo(&mConData.hdr_info);
 
-        mState = OUTPUT_MODE_STATE_SWITCH;
-        mConData.state = static_cast<meson_mode_state>(mState);
+        mState = state;
+        mConData.state = static_cast<meson_mode_state>(OUTPUT_MODE_STATE_SWITCH);
 
         strlcpy(mConData.cur_displaymode, outputmode, sizeof(mConData.cur_displaymode));
         meson_mode_set_policy_input(mModeConType, &mConData);
         meson_mode_get_policy_output(mModeConType, &mSceneOutInfo);
 
-        ret = applyDisplaySetting(force);
+        /*
+         * check force hdr support or not by current mode
+         * if force hdr mode not support by current mode, passthrough be used
+         */
+        if (state == OUTPUT_MODE_STATE_SWITCH) {
+            bool support = true;
+            support = check_hdr_mode(mHdrConversionType, mSceneOutInfo.displaymode);
+            if (!support) {
+                setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
+            }
+        }
+
+        /*
+         * allm need to force set mode
+         */
+        if (state == OUTPUT_MODE_STATE_SWITCH_ALLM) {
+            ret = applyDisplaySetting(true);
+        } else {
+            ret = applyDisplaySetting();
+        }
     }
 
     return ret;
