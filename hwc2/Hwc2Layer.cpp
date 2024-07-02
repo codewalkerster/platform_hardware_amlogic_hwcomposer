@@ -1145,10 +1145,12 @@ bool Hwc2Layer::isVtNeedClearFrameOrShowColorBuffer() {
             mVideoDisplayStatus = VT_VIDEO_STATUS_SHOW;
             /* need do disable video composer once */
             releaseVtResourceLocked(false);
+            releaseUvmResourceLock();
             ret = true;
             break;
         case VT_VIDEO_STATUS_HIDE:
             releaseVtResourceLocked(false);
+            releaseUvmResourceLock();
             setCurReleaseFence(-1);
             ret = true;
             break;
@@ -1161,6 +1163,7 @@ bool Hwc2Layer::isVtNeedClearFrameOrShowColorBuffer() {
             [[fallthrough]];
         case VT_VIDEO_STATUS_COLOR_ALWAYS:
             releaseVtResourceLocked(false);
+            releaseUvmResourceLock();
             break;
         case VT_VIDEO_STATUS_COLOR_DISABLE:
             mVideoDisplayStatus = VT_VIDEO_STATUS_SHOW;
