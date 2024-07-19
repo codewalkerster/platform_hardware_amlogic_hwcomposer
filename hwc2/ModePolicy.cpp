@@ -96,6 +96,7 @@ ModePolicy::ModePolicy() {
     mDisplayHeight = 0;
     mThread = 0;
     mInitialized = false;
+    mModeChange2Brr = false;
 }
 
 ModePolicy::ModePolicy(std::shared_ptr<meson::DisplayAdapter> adapter, const uint32_t displayId) {
@@ -113,6 +114,7 @@ ModePolicy::ModePolicy(std::shared_ptr<meson::DisplayAdapter> adapter, const uin
     mDisplayWidth = 0;
     mDisplayHeight = 0;
     mInitialized = false;
+    mModeChange2Brr = false;
     mThread = 0;
 }
 
@@ -1609,8 +1611,11 @@ void ModePolicy::setALLMMode(int state) {
                 mCrtc->setEnableVrr(true);
                 drm_mode_info_t brrMode;
                 if (findBrrMode(mCurrentMode, brrMode) && !strcmp(mCurrentMode, brrMode.name)
-                    && mConnector->isVrrGroupedMode(brrMode)) {
+                    && mConnector->isVrrGroupedMode(brrMode) && !mModeChange2Brr) {
                     mCrtc->setMode(brrMode, true);
+                } else if (mModeChange2Brr) {
+                    setSourceOutputMode(mAllmPrevMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
+                    mModeChange2Brr = false;
                 } else {
                     setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
                 }
@@ -1630,10 +1635,16 @@ void ModePolicy::setALLMMode(int state) {
             if (mConnector->supportVrr()) {
                 MESON_LOGI("%s: disable QMS Vrr", __func__);
                 mCrtc->setEnableVrr(false);
+                strlcpy(mAllmPrevMode,  mCurrentMode, sizeof(mAllmPrevMode));
+                mModeChange2Brr = false;
                 drm_mode_info_t brrMode;
                 if (findBrrMode(mCurrentMode, brrMode) && !strcmp(mCurrentMode, brrMode.name)
                     && mConnector->isVrrGroupedMode(brrMode)) {
                     mCrtc->setMode(brrMode, true);
+                } else if (findBrrMode(mCurrentMode, brrMode) && strcmp(mCurrentMode, brrMode.name)
+                    && mConnector->isVrrGroupedMode(brrMode)) {
+                    mModeChange2Brr = true;
+                    setSourceOutputMode(brrMode.name, OUTPUT_MODE_STATE_SWITCH_ALLM);
                 } else {
                     setSourceOutputMode(mCurrentMode, OUTPUT_MODE_STATE_SWITCH_ALLM);
                 }

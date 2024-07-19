@@ -370,6 +370,7 @@ protected:
     std::shared_ptr<IModePolicy> mModePolicy;
     // for allm
     bool mIsDisablePostProcessor = false;
+    bool mNeedChangeModelist = false;
 };
 
 #endif/*HWC2_DISPLAY_H*/

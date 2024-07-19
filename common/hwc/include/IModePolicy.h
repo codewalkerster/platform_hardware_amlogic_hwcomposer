@@ -76,6 +76,8 @@ public:
     virtual int32_t setHdrConversionPolicy(bool passthrough, int32_t forceType) = 0;
     // ALLM supported
     virtual int32_t setAutoLowLatencyMode(bool enabled) = 0;
+    virtual bool findBrrMode(drm_mode_info_t &currentMode, drm_mode_info_t &brrMode) = 0;
+    virtual bool findBrrMode(const char *currentMode, drm_mode_info_t &brrMode) = 0;
 
     virtual void dump(String8 &dumpstr) = 0;
 };

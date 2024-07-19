@@ -70,9 +70,11 @@ public:
 
     bool needCallHotPlug() { return mCallOnHotPlug; };
     void resetTags(bool hotplugTag = true) { mCallOnHotPlug = hotplugTag; };
+    void setReport2SfBrrMode(bool state = false) { mAllmState = state; };
 
 public:
     bool mCallOnHotPlug = true;
+    bool mAllmState = false;
 };
 
 std::shared_ptr<HwcModeMgr> createModeMgr(hwc_modes_policy_t policy);

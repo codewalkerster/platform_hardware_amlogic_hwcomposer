@@ -337,6 +337,7 @@ private:
     pthread_mutex_t mEnvLock;
 
     char mCurrentMode[MESON_MODE_LEN];
+    char mAllmPrevMode[MESON_MODE_LEN];
 
     std::string mDefaultUI;
 
@@ -348,6 +349,7 @@ private:
     pthread_t mThread;
     uint32_t mDisplayId;
     bool mInitialized;
+    bool mModeChange2Brr;
 
     std::map<uint32_t, drm_mode_info_t> mModes;
     std::shared_ptr<HDCPTxAuth> mTxAuth;

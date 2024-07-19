@@ -286,7 +286,11 @@ int32_t RealModeMgr::update() {
     if (mConnector->isConnected()) {
         mConnector->getModes(connectorModeList);
         int ret = mCrtc->getMode(realMode);
-        if (ret == 0) {
+        if (ret == 0 && mAllmState) {
+            mModes.emplace(nextModeId++, realMode);
+            useFakeMode = false;
+            MESON_LOGD("RealModeMgr::update only add one mode %s", realMode.name);
+        } else if (ret == 0 && !mAllmState) {
             /*
              * If the current mode is dummy_l and connector has connected,
              * we are in suspend process. Do not report dummy_l to frameworks,

@@ -586,6 +586,7 @@ int DrmConnector::DrmMode2Mode(drmModeModeInfo & drmmode, drm_mode_info_t & mode
                     /* frac mode refresh rate */
                     if (drmmode.vrefresh == REFRESH_24kHZ
                             || drmmode.vrefresh == REFRESH_30kHZ
+                            || drmmode.vrefresh == REFRESH_48kHZ
                             || drmmode.vrefresh == REFRESH_60kHZ
                             || drmmode.vrefresh == REFRESH_120kHZ
                             || drmmode.vrefresh == REFRESH_240kHZ) {

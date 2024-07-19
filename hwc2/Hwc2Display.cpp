@@ -83,6 +83,7 @@ Hwc2Display::Hwc2Display(std::shared_ptr<Hwc2DisplayObserver> observer, uint32_t
     wbHnd = nullptr;
     mExpectedPresentTime = -1;
     mIsDisablePostProcessor = false;
+    mNeedChangeModelist = false;
     memset(&mDisplayMode, 0, sizeof(mDisplayMode));
     memset(&mCalibrateInfo, 0, sizeof(mCalibrateInfo));
     mConnectorType = DRM_MODE_CONNECTOR_INVALID_TYPE;
@@ -417,9 +418,12 @@ void Hwc2Display::onHotplug(bool connected) {
     MESON_LOGD("displayID:%d, On hot plug: [%s]",
             mDisplayId, connected == true ? "Plug in" : "Plug out");
 
-    if (mModePolicy.get())
+    if (mModePolicy.get()) {
+        mCrtc->setEnableVrr(true);
+        mNeedChangeModelist = false;
+        mModeMgr->setReport2SfBrrMode(false);
         mModePolicy->onHotplug(connected);
-
+    }
     {
         std::lock_guard<std::mutex> lock(mMutex);
         std::lock_guard<std::mutex> vtLock(mVtMutex);
@@ -1765,6 +1769,7 @@ hwc2_error_t Hwc2Display::setActiveConfig(hwc2_config_t config) {
                 mVsync->setPeriod(period);
             if (mVtVsync)
                 mVtVsync->setPeriod(period);
+            mModeMgr->getDisplayMode(mDisplayMode);
         }
 
         /* wait when the display start refresh at the new config */
@@ -1947,6 +1952,7 @@ hwc2_error_t Hwc2Display::setActiveConfigWithConstraints(hwc2_config_t config,
                 mVsync->setPeriod(period);
             if (mVtVsync)
                 mVtVsync->setPeriod(period);
+            mModeMgr->getDisplayMode(mDisplayMode);
         }
 
         /* wait when the display start refresh at the new config */
@@ -2003,20 +2009,24 @@ hwc2_error_t Hwc2Display::setAutoLowLatencyMode(bool enabled) {
         mOutsideChanged = true;
         if (mModePolicy) {
             std::unique_lock<std::mutex> stateLock(mStateLock);
-            bool needReset = false;
-
+            drm_mode_info_t brrMode;
             if (mConnector->getType() == DRM_MODE_CONNECTOR_HDMIA &&
-                    mConnector->supportVrr()) {
-                needReset = true;
+                    mConnector->supportVrr() &&
+                    mModePolicy->findBrrMode(mDisplayMode.name, brrMode) &&
+                    strcmp(mDisplayMode.name, brrMode.name) &&
+                    mConnector->isVrrGroupedMode(brrMode)) {
+                mNeedChangeModelist = true;
             }
-            if (needReset) {
-                mModeMgr->resetTags(false);
+            if (mNeedChangeModelist) {
+                mModeMgr->resetTags(true);
+                mModeMgr->setReport2SfBrrMode(enabled);
+            }
+
+            if (!enabled && mNeedChangeModelist) {
+                mNeedChangeModelist = false;
             }
             int32_t ret = mModePolicy->setAutoLowLatencyMode(enabled);
-            if (needReset) {
-                //mStateCondition.wait_for(stateLock, std::chrono::seconds(1));
-                mModeMgr->resetTags(true);
-            }
+
             return (hwc2_error_t)ret;
         }
 
