@@ -236,12 +236,16 @@ bool DrmConnector::isSeamlessMode(const drm_mode_info_t & mode, const drm_mode_i
     for (int32_t i = 0; i < mVrrModeGroup.num; i++) {
         if (mVrrModeGroup.groups[i].width == mode.pixelW
                 && mVrrModeGroup.groups[i].height == mode.pixelH) {
-            if (((mode.refreshRate - mVrrModeGroup.groups[i].vrr_min / 100) >= 0)
-                        && (mode.refreshRate - mVrrModeGroup.groups[i].vrr_max / 100 <= 0)) {
+            if (((mode.refreshRate - mVrrModeGroup.groups[i].vrr_min) >= 0
+                    //frac refresh rate
+                    || std::abs(mode.refreshRate - (mVrrModeGroup.groups[i].vrr_min * 1000) / (float)1001) < 0.001)
+                        && (mode.refreshRate - mVrrModeGroup.groups[i].vrr_max <= 0)) {
                 if (mVrrModeGroup.groups[i].width == groupMode.pixelW
                         && mVrrModeGroup.groups[i].height == groupMode.pixelH) {
-                    if (((groupMode.refreshRate - mVrrModeGroup.groups[i].vrr_min / 100) >= 0)
-                            && (groupMode.refreshRate - mVrrModeGroup.groups[i].vrr_max / 100 <= 0)) {
+                    if (((groupMode.refreshRate - mVrrModeGroup.groups[i].vrr_min) >= 0
+                        //frac refresh rate
+                        || std::abs(groupMode.refreshRate - (mVrrModeGroup.groups[i].vrr_min * 1000) / (float)1001) < 0.001)
+                            && (groupMode.refreshRate - mVrrModeGroup.groups[i].vrr_max <= 0)) {
                         return true;
                     } else {
                         return false;
