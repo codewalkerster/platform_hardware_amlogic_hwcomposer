@@ -90,7 +90,7 @@ struct conn_type_cov_name_list {
 const conn_type_cov_name_list* getDisplayTypeConvList() {
     static const struct conn_type_cov_name_list conn_type_cov_array[] = {
             {DisplayAdapter::CONN_TYPE_DUMMY,DRM_MODE_CONNECTOR_VIRTUAL},
-            {DisplayAdapter::CONN_TYPE_CVBS,DRM_MODE_CONNECTOR_VIRTUAL},
+            {DisplayAdapter::CONN_TYPE_CVBS,DRM_MODE_CONNECTOR_TV},
             {DisplayAdapter::CONN_TYPE_HDMIA,DRM_MODE_CONNECTOR_HDMIA},
             {DisplayAdapter::CONN_TYPE_LVDS_A,DRM_MODE_CONNECTOR_MESON_LVDS_A},
             {DisplayAdapter::CONN_TYPE_LVDS_B,DRM_MODE_CONNECTOR_MESON_LVDS_B},

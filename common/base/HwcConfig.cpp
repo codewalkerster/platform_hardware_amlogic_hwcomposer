@@ -86,7 +86,16 @@ uint32_t HwcConfig::getConnectorType(int disp) {
         isDrmBackend = true;
 
     if (disp == 0) {
-        if (isDrmBackend) {
+        #ifdef HWC_PRIMARY_CONNECTOR_TYPE
+            if (sys_get_string_prop("persist.vendor.hwc.connector-0", strval) > 0)
+                connectorstr = strval;
+            else
+                connectorstr = HWC_PRIMARY_CONNECTOR_TYPE;
+                MESON_LOGD("%s, get HWC_PRIMARY_CONNECTOR_TYPE return %s",
+                            __func__, connectorstr);
+        #endif
+
+        if (isDrmBackend && connectorstr != NULL && strstr(connectorstr,"hdmi") == NULL) {
             if (!sc_read_bootenv(UBOOTENV_PRIMARY_CONNECTOR_TYPE, tmpConnectorstr)) {
                 connectorstr = tmpConnectorstr.c_str();
             }
@@ -94,16 +103,7 @@ uint32_t HwcConfig::getConnectorType(int disp) {
                     __func__, UBOOTENV_PRIMARY_CONNECTOR_TYPE, connectorstr);
         }
 
-        if (connectorstr == NULL) {
-            #ifdef HWC_PRIMARY_CONNECTOR_TYPE
-                if (sys_get_string_prop("persist.vendor.hwc.connector-0", strval) > 0)
-                    connectorstr = strval;
-                else
-                    connectorstr = HWC_PRIMARY_CONNECTOR_TYPE;
-            #else
-                MESON_ASSERT(0, "HWC_PRIMARY_CONNECTOR_TYPE not set.");
-            #endif
-        }
+        MESON_ASSERT(connectorstr != NULL, "disp 0  not set connector type.");
     } else if (disp == 1) {
         if (isDrmBackend) {
             if (!sc_read_bootenv(UBOOTENV_EXTEND_CONNECTOR_TYPE, tmpConnectorstr)) {
