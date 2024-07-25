@@ -1452,7 +1452,8 @@ hwc2_error_t Hwc2Display::acceptDisplayChanges() {
 }
 
 hwc2_error_t Hwc2Display::presentSkipValidateCheck() {
-    if (DebugHelper::getInstance().disableUiHwc()) {
+    if (DebugHelper::getInstance().disableUiHwc()
+        || DebugHelper::getInstance().debugHideLayers()) {
         return HWC2_ERROR_NOT_VALIDATED;
     }
 
