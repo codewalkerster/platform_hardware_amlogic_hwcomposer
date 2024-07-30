@@ -330,7 +330,7 @@ int32_t Hwc2Display::blankDisplayLocked(bool blockMode) {
         if (blockMode) {
             std::shared_ptr<DrmFence> outfence =
                 std::make_shared<DrmFence>(fenceFd);
-            outfence->wait(3000);
+            outfence->wait(300);
         } else
             close(fenceFd);
     }
