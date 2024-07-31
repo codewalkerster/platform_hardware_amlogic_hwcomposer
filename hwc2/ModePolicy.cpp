@@ -2078,8 +2078,36 @@ bool ModePolicy::applyDisplaySetting(bool force) {
     bool frac_rate_policy_change        = false;
 
     if (mReason != OUTPUT_CHANGE_BY_HWC) {
+        if ((mState == OUTPUT_MODE_STATE_INIT) ||
+            (mState == OUTPUT_MODE_STATE_POWER)) {
+            /*
+             * if user preferred mode not support use automatic mode
+             * and the fraction need to keep with default value
+             */
+            if (strcmp(mConData.cur_displaymode, mSceneOutInfo.displaymode) != 0) {
+                /*
+                 * need to keep the same value with the default value
+                 */
+                bool preferredFrac = sys_get_bool_prop("persist.vendor.hwc.preferredFrac", true);
+                if (mConnector->supportVrr()) {
+                    preferredFrac = false;
+                }
+                strlcpy(frac_rate_policy, preferredFrac ? "1" : "0", sizeof(frac_rate_policy));
+            } else {
+                getBootEnv(UBOOTENV_FRAC_RATE_POLICY, frac_rate_policy);
+            }
+        } else if (mState == OUTPUT_MODE_STATE_SWITCH) {
+            getBootEnv(UBOOTENV_FRAC_RATE_POLICY, frac_rate_policy);
+        } else {
+            /*
+             * only user change resolution need update frac from env
+             * and other case doesn't need update frac
+             */
+            sysfs_get_string(HDMI_TX_FRAMERATE_POLICY, frac_rate_policy, MESON_MODE_LEN);
+        }
+
         sysfs_get_string(HDMI_TX_FRAMERATE_POLICY, cur_frac_rate_policy, MESON_MODE_LEN);
-        getBootEnv(UBOOTENV_FRAC_RATE_POLICY, frac_rate_policy);
+
         MESON_LOGI("get uenv frc policy is %s and current value is %s\n",frac_rate_policy, cur_frac_rate_policy);
         if (strstr(frac_rate_policy, cur_frac_rate_policy) == NULL) {
             sysfs_set_string(HDMI_TX_FRAMERATE_POLICY, frac_rate_policy);
@@ -2095,10 +2123,9 @@ bool ModePolicy::applyDisplaySetting(bool force) {
              getBootEnv(UBOOTENV_FRAC_RATE_POLICY, frac_rate_policy);
          }
          MESON_LOGI("get frc policy from hwc is %s and current value is %s\n",frac_rate_policy, cur_frac_rate_policy);
-          if (strstr(frac_rate_policy, cur_frac_rate_policy) == NULL) {
+         if (strstr(frac_rate_policy, cur_frac_rate_policy) == NULL) {
              sysfs_set_string(HDMI_TX_FRAMERATE_POLICY, frac_rate_policy);
-
-               frac_rate_policy_change = true;
+             frac_rate_policy_change = true;
          }
     }
 
@@ -2759,6 +2786,7 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
     if (!support) {
         setBootEnv(UBOOTENV_HDR_POLICY, MESON_HDR_POLICY[MESON_HDR_POLICY_SOURCE]);
     }
+
     //5. apply settings to driver
     applyDisplaySetting();
 }
