@@ -2721,9 +2721,14 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
         }
 
         //getConnectorData
-        getConnectorData(&mConData, &mDvInfo);
+        int32_t ret = getConnectorData(&mConData, &mDvInfo);
         //must use hdmimode as current mode for boot and hdmi plug in/resume
-        strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
+        // when OTT support qms, boot tfr != brr, use brr mode as current mode to avoid screen flash
+        if (state == OUTPUT_MODE_STATE_INIT && mConnector && mConnector->supportVrr() && ret == 0) {
+            MESON_LOGD("qms init use mode from drm, driver init always use brr mode");
+        } else {
+            strlcpy(mConData.cur_displaymode, mConData.con_info.ubootenv_hdmimode, sizeof(mConData.cur_displaymode));
+        }
     }
 
     //3. hdmi edid parse error and hpd = 1
