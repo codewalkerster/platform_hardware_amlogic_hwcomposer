@@ -291,12 +291,11 @@ int32_t Hwc2Display::setVsync(std::shared_ptr<HwcVsync> vsync) {
  */
 int32_t Hwc2Display::blankDisplay() {
     ATRACE_CALL();
-    mMutex.try_lock();
+    std::lock_guard<std::mutex> lock(mMutex);
     mPowerMode->setConnectorStatus(false);
     mSkipComposition = true;
 
     blankDisplayLocked();
-    mMutex.unlock();
     return 0;
 }
 
