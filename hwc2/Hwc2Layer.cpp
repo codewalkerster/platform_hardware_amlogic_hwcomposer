@@ -274,8 +274,10 @@ hwc2_error_t Hwc2Layer::setSidebandStream(const native_handle_t* stream,
         mFbType = DRM_FB_VIDEO_SIDEBAND_TV;
     } else if (type == AM_FIXED_TUNNEL) {
         mFbType = DRM_FB_VIDEO_TUNNEL_SIDEBAND;
-        if (channel_id < 0)
+        if (channel_id < 0) {
+            VtInstanceMgr::getInstance().unlockInstancesMutex();
             return HWC2_ERROR_BAD_PARAMETER;
+        }
 
         if (mTunnelId != channel_id) {
             if (mTunnelId >= 0) {
@@ -298,6 +300,7 @@ hwc2_error_t Hwc2Layer::setSidebandStream(const native_handle_t* stream,
                 MESON_LOGE("%s [%" PRId64 "] register consumer for videotunnel %d failed, error %d",
                         __func__, mId, channel_id, ret);
                 mTunnelId = -1;
+                VtInstanceMgr::getInstance().unlockInstancesMutex();
                 return HWC2_ERROR_BAD_PARAMETER;
             }
         }
