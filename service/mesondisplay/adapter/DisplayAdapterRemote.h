@@ -41,6 +41,8 @@ public:
     bool setWBDisplayFrame(int x, int y) override;
     bool hideVideoLayer(bool hide) override;
     bool setHdrConversionStrategy(uint32_t passThrough, uint32_t forcemode) override;
+    bool disableQms(bool isDisable) override;
+    bool getQmsVrrCap() override;
 
     bool dumpDisplayAttribute(Json::Value& json, ConnectorType displayType) override;
     bool enableSyncProtection(bool mode) override;

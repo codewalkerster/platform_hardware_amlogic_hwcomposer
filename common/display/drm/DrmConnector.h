@@ -83,9 +83,11 @@ public:
 
     int DrmMode2Mode(drmModeModeInfo & drmmode, drm_mode_info_t & mode);
     bool isTvType();
+    bool isHDMIType();
 
     std::mutex mMutex;
     bool getHdrType(std::string & hdrType);
+    void disableQms(bool state);
 
 protected:
     int32_t loadConnectorInfo(drmModeConnectorPtr metadata);
@@ -109,6 +111,7 @@ protected:
     /*mode_id, modeinfo. mode_id is created by userspace, not from kernel.*/
     std::map<uint32_t, drmModeModeInfo> mDrmModes;
     std::map<uint32_t, drm_mode_info_t> mMesonModes;
+    std::map<uint32_t, drm_mode_info_t> mVicModes;
     /* for seamless group id */
     std::map<uint32_t, std::vector<drm_mode_info_t *>> mMesonGroupModes;
     std::vector<float> mFracRefreshRates;
@@ -149,10 +152,10 @@ protected:
     drm_hdr_capabilities mHdrCapabilities;
 
     /* support VRR or not */
-    bool mSupportVrr = false;
     bool mSupportDv = false;
 
     drm_meson_vrr_mode_groups_t mVrrModeGroup;
+    bool mDisableQms = false;
 };
 
 #endif/*DRM_CONNECTOR_H*/

@@ -102,6 +102,7 @@ public:
 
     virtual bool isReady() {return true;};
     virtual bool supportVrr() {return false;};
+    virtual void disableQms(bool /* state */) { };
 
 };
 

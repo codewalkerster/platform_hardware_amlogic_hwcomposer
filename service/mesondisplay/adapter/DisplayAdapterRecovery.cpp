@@ -494,6 +494,15 @@ bool DisplayAdapterLocal::disableSidebandStream(bool isDisable){
     return ret;
 }
 
+bool DisplayAdapterLocal::disableQms(bool /*isDisable*/) {
+    NOTIMPLEMENTED;
+    return false;
+}
+
+bool DisplayAdapterLocal::getQmsVrrCap() {
+    return false;
+}
+
 bool DisplayAdapterLocal::dumpDisplayAttribute(Json::Value& json, ConnectorType displayType) {
     Json::Value ret;
     UNUSED(displayType);

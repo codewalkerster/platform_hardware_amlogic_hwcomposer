@@ -247,6 +247,23 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
         if (in["value"].asString() == "true" )
             isDisable = true;
         mAdapter->disableSidebandStream(isDisable);
+    } else if (cmd == "disableQms") {
+        if (!in.isMember("value")) {
+            out["ret"] = ret;
+            return;
+        }
+        bool isDisable = false;
+        if (in["value"].asString() == "true" )
+            isDisable = true;
+        mAdapter->disableQms(isDisable);
+    } else if (cmd == "getQmsVrrCap") {
+        bool value = false;
+        value = mAdapter->getQmsVrrCap();
+        if (value == true) {
+            ret["value"] = "true";
+        } else {
+            ret["value"] = "false";
+        }
     } else if (cmd == "enableSyncProtection") {
         if (!in.isMember("value"))
             goto OUT;

@@ -32,6 +32,8 @@
 #define HDMI_FRAC_RATE_POLICY "/sys/class/amhdmitx/amhdmitx0/frac_rate_policy"
 #define HDMI_TX_ALLM_MODE   "/sys/class/amhdmitx/amhdmitx0/allm_cap"
 
+#define DRM_MODE_FLAG_EDID_VIC     (1)
+
 static const u8 default_1080p_edid[EDID_MIN_LEN] = {
 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
 0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -66,6 +68,18 @@ DrmConnector::DrmConnector(int drmFd, drmModeConnectorPtr p)
     mType(p->connector_type) {
 
     mFracMode = HWC_HDMI_FRAC_MODE;
+    mDisableQms = false;
+    // load default value of qms enable
+    if (mType == DRM_MODE_CONNECTOR_HDMIA) {
+        std::string ubootenv;
+        if (!sc_read_bootenv("ubootenv.var.qms_en",  ubootenv)) {
+            MESON_LOGD("qms_en ubootenv:%s", ubootenv.c_str());
+            if (!ubootenv.compare("0")) {
+                mDisableQms = true;
+            }
+        }
+    }
+
     loadConnectorInfo(p);
 }
 
@@ -129,6 +143,7 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
     for (auto & it : mDrmModes)
         drmModeDestroyPropertyBlob(mDrmFd, it.first);
     mMesonModes.clear();
+    mVicModes.clear();
     mFracRefreshRates.clear();
     mDrmModes.clear();
 
@@ -139,6 +154,7 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
     uint32_t blobid = 0;
     MESON_LOGD("Connector %s loadDisplayModes get %d modes", getName(), p->count_modes);
     for (int i = 0;i < p->count_modes; i ++) {
+        bool vicModes = true;
         strncpy(modeInfo.name, drmModes[i].name, DRM_DISPLAY_MODE_LEN - 1);
         modeInfo.pixelW = drmModes[i].hdisplay;
         modeInfo.pixelH = drmModes[i].vdisplay;
@@ -151,6 +167,15 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
         if (drmModeCreatePropertyBlob(mDrmFd, &drmModes[i], sizeof(drmModes[i]), &blobid) != 0) {
             MESON_LOGE("CreateProp for mode failed %s", modeInfo.name);
             continue;
+        }
+
+        mDrmModes.emplace(blobid, drmModes[i]);
+
+        if (isHDMIType() && supportVrr()) {
+            if (mDisableQms &&
+                    (drmModes[i].hskew & DRM_MODE_FLAG_EDID_VIC) != DRM_MODE_FLAG_EDID_VIC) {
+                vicModes = false;
+            }
         }
 
         bool bNonFractionMode = false;
@@ -167,6 +192,8 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
                         fracMode.refreshRate = (modeInfo.refreshRate * 1000) / (float)1001;
                         fracMode.groupId = mMesonModes.size();
                         mMesonModes.emplace(mMesonModes.size(), fracMode);
+                        if (vicModes)
+                            mVicModes.emplace(mVicModes.size(), fracMode);
                         mFracRefreshRates.push_back(fracMode.refreshRate);
                         MESON_LOGD("add fraction display mode (%s)", fracMode.name);
                     }
@@ -188,13 +215,14 @@ int32_t DrmConnector::loadDisplayModes(drmModeConnectorPtr p) {
             // add normal refresh rate config, like 24hz, 30hz...
             modeInfo.groupId = mMesonModes.size();
             mMesonModes.emplace(mMesonModes.size(), modeInfo);
+            if (vicModes)
+                mVicModes.emplace(mVicModes.size(), modeInfo);
         }
 
-        mDrmModes.emplace(blobid, drmModes[i]);
-        MESON_LOGI("add display mode (%s-%s-%d, %dx%d, %f) dpi(%d,%d)",
+        MESON_LOGI("add display mode (%s-%s-%d, %dx%d, %f) dpi(%d,%d), hskew(%d)",
             drmModes[i].name, modeInfo.name, blobid,
             modeInfo.pixelW, modeInfo.pixelH, modeInfo.refreshRate,
-            modeInfo.dpiX, modeInfo.dpiY);
+            modeInfo.dpiX, modeInfo.dpiY, drmModes[i].hskew);
     }
 
     MESON_LOGI("loadDisplayModes (%" PRIuFAST16 ") end", mMesonModes.size());
@@ -208,6 +236,10 @@ bool DrmConnector::isTvType() {
         return true;
 
     return false;
+}
+
+bool DrmConnector::isHDMIType() {
+    return mType == DRM_MODE_CONNECTOR_HDMIA || mType == DRM_MODE_CONNECTOR_HDMIB;
 }
 
 bool DrmConnector::supportVrr() {
@@ -260,7 +292,7 @@ bool DrmConnector::isSeamlessMode(const drm_mode_info_t & mode, const drm_mode_i
 
 int32_t DrmConnector::loadVrrModeGroups() {
     if (!isTvType()) {
-        if (!(mSupportVrr = supportVrr()) || !HwcConfig::seamlessSwitchEnabled()) {
+        if (!supportVrr() || !HwcConfig::seamlessSwitchEnabled()) {
             return 0;
         }
     }
@@ -291,7 +323,7 @@ int32_t DrmConnector::loadVrrModeGroups() {
 int32_t DrmConnector::groupDisplayModes() {
     /* no need to regenerate groupId if without QMS/VRR support */
     if (!isTvType()) {
-        if (!(mSupportVrr = supportVrr()) || !HwcConfig::seamlessSwitchEnabled()) {
+        if (!supportVrr() || !HwcConfig::seamlessSwitchEnabled()) {
             return 0;
         }
     }
@@ -440,6 +472,16 @@ int32_t DrmConnector::update() {
 
 int32_t DrmConnector::setCrtcId(uint32_t crtcid) {
     std::lock_guard<std::mutex> lock(mMutex);
+    // if qms is disabled need disable crtc vrr
+    if (isHDMIType() && supportVrr()) {
+        auto displayCrtc = getDrmDevice()->getCrtcById(crtcid);
+        if (displayCrtc) {
+           DrmCrtc * crtc = (DrmCrtc *)displayCrtc.get();
+           crtc->setEnableVrr(!mDisableQms);
+           MESON_LOGD("connector %s setEnableVrr:%d", getName(), mDisableQms);
+        }
+    }
+
     return mCrtcId->setValue(crtcid);
 }
 
@@ -451,7 +493,12 @@ uint32_t DrmConnector::getCrtcId() {
 int32_t DrmConnector::getModes(
     std::map<uint32_t, drm_mode_info_t> & modes) {
     std::lock_guard<std::mutex> lock(mMutex);
-    modes = mMesonModes;
+    if (isHDMIType() && supportVrr()) {
+        modes = mDisableQms ? mVicModes : mMesonModes;
+    } else {
+        modes = mMesonModes;
+    }
+
     return 0;
 }
 
@@ -622,11 +669,11 @@ int DrmConnector::DrmMode2Mode(drmModeModeInfo & drmmode, drm_mode_info_t & mode
 
 void DrmConnector::dump(String8 & dumpstr) {
     dumpstr.appendFormat("Connector (%s, %d, %d x %d, %s, %s) mId(%d)"
-        " mCrtcId(%d) mFracMode(%d) vrrCap(%d)\n",
+        " mCrtcId(%d) mFracMode(%d) vrrCap(%d) mDisableQms(%d)\n",
         getName(), getType(), mPhyWidth, mPhyHeight,
         isSecure() ? "secure" : "unsecure",
         isConnected() ? "Connected" : "Removed",
-        mId, getCrtcId(), mFracMode, supportVrr());
+        mId, getCrtcId(), mFracMode, supportVrr(), mDisableQms);
 
     //dump display config.
     if (mEdid)
@@ -764,6 +811,11 @@ void DrmConnector::getHdrCapabilities(drm_hdr_capabilities * caps) {
         *caps = mHdrCapabilities;
     }
 }
+
+void DrmConnector::disableQms(bool state)  {
+    mDisableQms = state;
+    MESON_LOGV("%s mDisable:%d", __func__, mDisableQms);
+};
 
 int32_t DrmConnector::getHdrPriority(uint32_t & hdrPriority) {
     if (mHdrPriority)

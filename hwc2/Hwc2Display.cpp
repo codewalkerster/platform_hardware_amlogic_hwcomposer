@@ -50,6 +50,8 @@
 #include <AmVecmDev.h>
 #include <DrmTypes.h>
 
+#define QMS_VRR_CTL "ubootenv.var.qms_en"
+
 Hwc2Display::Hwc2Display(std::shared_ptr<Hwc2DisplayObserver> observer, uint32_t display) {
     mObserver = observer;
     mForceClientComposer = false;
@@ -1117,6 +1119,23 @@ void Hwc2Display::setWhiteBoardMode(bool mode) {
 void Hwc2Display::disableSideband(bool isDisable){
     MESON_LOGD("set SideBand Disable %s", isDisable ? "true" : "false");
     mDisableSideband = isDisable;
+}
+
+void Hwc2Display::disableQms(bool isDisable){
+    MESON_LOGD("set QMS Disable %s", isDisable ? "true" : "false");
+    if (mConnector && mConnector->getType() == DRM_MODE_CONNECTOR_HDMIA) {
+        std::unique_lock<std::mutex> stateLock(mStateLock);
+        drm_mode_info_t brrMode;
+        mModePolicy->findBrrMode(mDisplayMode, brrMode);
+        mConnector->disableQms(isDisable);
+        mCrtc->setEnableVrr(!isDisable);
+        blankDisplayLocked();
+        mCrtc->setMode(brrMode, false);
+        mStateCondition.wait_for(stateLock, std::chrono::seconds(3));
+        // for update connector data in mode policy
+        mModePolicy->update();
+        sc_set_bootenv(QMS_VRR_CTL, isDisable ? "0" : "1");
+    }
 }
 
 int32_t Hwc2Display::getDisplayIdentificationData(uint32_t &outPort,

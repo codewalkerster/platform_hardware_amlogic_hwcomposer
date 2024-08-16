@@ -380,6 +380,29 @@ bool DisplayAdapterRemote::setReverseMode(int type) {
     return true;
 }
 
+bool DisplayAdapterRemote::disableQms(bool isDisable) {
+    Json::Value cmd;
+    IF_SERVER_NOT_READY_RETURN(false);
+    cmd["cmd"] = "disableQms";
+    cmd["value"] = isDisable?"true":"false";
+    ipc->send_request(cmd);
+    return true;
+}
+
+bool DisplayAdapterRemote::getQmsVrrCap() {
+    Json::Value cmd, ret;
+    IF_SERVER_NOT_READY_RETURN(false);
+    cmd["cmd"] = "getQmsVrrCap";
+    ipc->send_request_wait_reply(cmd, ret);
+    if (ret.isMember("ret") && ret["ret"]["value"].isString()) {
+        if (ret["ret"]["value"].asString() == "true") {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 std::unique_ptr<DisplayAdapter> DisplayAdapterRemote::create() {
     return static_cast<std::unique_ptr<DisplayAdapter>>(std::make_unique<DisplayAdapterRemote>());
 }

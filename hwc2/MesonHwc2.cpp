@@ -1202,6 +1202,12 @@ bool MesonHwc2::setFrameRateHint(std::string value) {
     return hwcDisplay->setFrameRateHint(value);
 }
 
+bool MesonHwc2::disableQms(bool isDisable) {
+    GET_HWC_DISPLAY(0);
+    hwcDisplay->disableQms(isDisable);
+    return true;
+}
+
 int32_t MesonHwc2::setFrameRate(float value) {
     GET_HWC_DISPLAY(0);
     return hwcDisplay->setFrameRate(value);

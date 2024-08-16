@@ -18,61 +18,66 @@
 
 #include "DisplayAdapter.h"
 
+#ifndef NOTIMPLEMENTED
+#define NOTIMPLEMENTED fprintf(stderr, "Function:%s not implemented", __PRETTY_FUNCTION__)
+#endif
+
 using meson::DisplayAdapter;
 using std::unique_ptr;
 
-static const char* short_option = "lc:g:s:r:G:S:F:dDvw:bf:h:P:p:R:t:m:";
+static const char* short_option = "c:g:s:r:G:S:F:w:f:h:P:p:R:t:m:v";
+
 static const struct option long_option[] = {
-    {"list-modes", no_argument, 0, 'l'},
     {"chang-mode", required_argument, 0, 'c'},
     {"get-property", required_argument, 0, 'g'},
     {"set-property", required_argument, 0, 's'},
     {"raw-cmd", required_argument, 0, 'r'},
-    {"dump-display-attribute", no_argument, 0, 'd'},
-    {"vsync-timestamp", no_argument, 0, 'v'},
     {"sync-protection",required_argument,0,'P'},
     {"disable-sideband",required_argument,0,'p'},
     {"change-type", required_argument, 0, 't'},
     {"perferred-mode", required_argument, 0, 'm'},
     {"keystone-configs",required_argument,0,'k'},
     {"reverse-display",required_argument,0,'V'},
-    {"get-supported-deepcolor",required_argument,0,'D'},
+    {"get-connector-type",required_argument,0,'n'},
+    {"disable-qms",required_argument,0,'v'},
     {0, 0, 0, 0}
 };
 
 static void print_usage(const char* name) {
-    printf("Usage: %s [-lcrgs]\n"
+    printf("Usage: %s [-cgsGSFwfhPpRtmkVnr]\n"
             "Get or change the mode setting of the weston drm output.\n"
             "Options:\n"
-            "       -l,--list-modes        \tlist connector support modes\n"
             "       -c,--change-mode MODE  \tchange connector current mode, MODE format like:%%dx%%d@%%d width,height,refresh\n"
-            "       -d,--dump-display-attribute \tdump all display attribute\n"
-            "       -D,--get-supported-deepcolor\t get the supported deep color under current mode\n"
             "       -g,--get-display-attribute  \"ATTRI_NAME\"\tget display attribute\n"
             "       -s,--set-display-attribute  \"ATTRI_NAME\"=value\tset display attribute\n"
             "       -G \"[ui-rect|display-mode]\"\tget [logic ui rect|display mode]\n"
             "       -S \"[ui-rect]\"\tset [logic ui rect]\n"
             "                               \t eg: \"Content Protection\" 1\n"
-            "       -v, --get-vsyn-timestamp and period \t get primary display vsync timestamp and vsync period\n"
             "       -F, [framerate] \tset framerate for AFR\n"
             "       -w,--set-whiteboard  \t  disable [false|true]white board \n "
-            "       -b,--get-whiteboard  \t  get current white board mode\n "
             "       -f,--set-whiteboard display position \t  x and y is the position\n "
             "       -h,--hide the video layer \t  hide the video layer\n "
             "       -p,--disable-sideband  \t  disable [false|true]side band \n "
             "       -P,--sync Protection control \t  sync Protection control\n "
             "       -R,--set-hdr-conversionstrategy \tset [strategy] [fource type]\n"
-            "       -t,--change-type TYPE  \tchange connector type, TYPE could be 0|1|2|3, like:\n"
-            "                              \t\t0    ----DUMMY\n"
-            "                              \t\t1    ----HDMI\n"
-            "                              \t\t2    ----PANEL\n"
-            "                              \t\t3    ----CVBS\n"
+            "       -t,--change-type TYPE  \tchange connector type, TYPE could reference DisplayAdapter::ConnectorType\n"
             "       -m,--perferred-mode MODE\tchange perferred mode, MODE format like:%%dx%%d@%%d width,height,refresh\n"
             "       -k,--set-Keystone Correction \t  params is the position\n "
-            "       -V,--enable kesytone reverse  \t  params is the reverse type\n "
-            "       -r,--raw-cmd           \tsend raw cmd\n", name);
+            "       -V,--enable keystone reverse  \t  params is the reverse type\n "
+            "       -v,--disable-qms        \t  disable [false|true] qms\n"
+            "       -r,--raw-cmd           \tsend raw cmd\n"
+            "                              \teg: \"userSpaceHDCPTxAuth\" \n"
+            "                                    \"getSupportDisplayModes\" \n"
+            "                                    \"getDisplayIds\" \n"
+            "                                    \"dumpDisplayAttribute\" \n"
+            "                                    \"getCurrentSupportDeepColor\" \n"
+            "                                    \"getWhiteBoardMode\" \n"
+            "                                    \"isHdmiUsed\" \n"
+            "                              \teg: \"setDisplayConnector\" [connector type] TYPE could be like:\n"
+            "                              \t    DUMMY\n"
+            "                              \t    CVBS\n"
+            "                              \t    HDMI, HDMI is default connector\n", name);
 }
-
 
 int main(int argc, char* argv[]) {
     std::vector<meson::DisplayModeInfo> displayModeList;
@@ -84,22 +89,16 @@ int main(int argc, char* argv[]) {
     unique_ptr<DisplayAdapter> client = meson::DisplayAdapterCreateRemote();
     DEBUG_INFO("Start client");
 #else
-    unique_ptr<DisplayAdapter> client = meson::DisplayAdapterCreateLocal(meson::DisplayAdapter::BackendType::DISPLAY_TYPE_FBDEV);
+    unique_ptr<DisplayAdapter> client = meson::DisplayAdapterCreateLocal();
     DEBUG_INFO("Start recovery client");
 #endif
     DisplayAdapter::ConnectorType type = DisplayAdapter::CONN_TYPE_HDMI;
-
+    std::vector<int> displayIdList;
 
     int opt;
+
     while ((opt = getopt_long(argc, argv, short_option, long_option, NULL)) != -1) {
         switch (opt) {
-            case 'l':
-                if (client->getSupportDisplayModes(displayModeList, type)) {
-                    for (auto mode : displayModeList) {
-                        printf("%s %u %u %u %u %f \n", mode.name.c_str(), mode.dpiX, mode.dpiY, mode.pixelW, mode.pixelH, mode.refreshRate);
-                    }
-                }
-                break;
             case 'c':
                 if (optarg == NULL)
                     break;
@@ -149,7 +148,7 @@ int main(int argc, char* argv[]) {
                 {
                     if (0 == memcmp("display-mode", optarg, sizeof("display-mode"))) {
                         if (optind + 1 > argc) {
-                            DEBUG_INFO("miss parameter");
+                            printf("miss parameter");
                             break;
                         }
                         client->setDisplayMode(argv[optind], type);
@@ -157,7 +156,7 @@ int main(int argc, char* argv[]) {
                     } else if (0 == memcmp("ui-rect", optarg, sizeof("ui-rect"))) {
                         meson::Rect rect;
                         if (optind + 4 > argc) {
-                            DEBUG_INFO("miss rect parameter");
+                            printf("miss rect parameter");
                             break;
                         }
                         rect.x = strtol(argv[optind], NULL, 10);
@@ -167,7 +166,7 @@ int main(int argc, char* argv[]) {
                         rect.w = strtol(argv[optind], NULL, 10);
                         optind++;
                         rect.h = strtol(argv[optind], NULL, 10);
-                        DEBUG_INFO("set ui to (%s)", rect.toString().c_str());
+                        printf("set ui to (%s)", rect.toString().c_str());
                         client->setDisplayRect(rect, type);
                         optind++;
                     } else {
@@ -176,14 +175,33 @@ int main(int argc, char* argv[]) {
                 }
                 break;
             case 'r':
-                NOTIMPLEMENTED;
-                break;
-            case 'v':
-                int64_t vsyncTimestamp;
-                int32_t vsyncPeriod;
-                client->getDisplayVsyncAndPeriod(vsyncTimestamp, vsyncPeriod);
-                printf("vsyncTimestamp:%" PRId64 " ns Period:%d ns\n",
-                        vsyncTimestamp, vsyncPeriod);
+                if (optarg == NULL)
+                    break;
+
+                if (memcmp("getSupportDisplayModes", optarg, sizeof("getSupportDisplayModes")) == 0) {
+                    if (client->getSupportDisplayModes(displayModeList, type)) {
+                        for (auto const &mode : displayModeList) {
+                            printf("%s %u %u %u %u %f \n", mode.name.c_str(), mode.dpiX, mode.dpiY, mode.pixelW, mode.pixelH, mode.refreshRate);
+                        }
+                    }
+                } else if (memcmp("dumpDisplayAttribute", optarg, sizeof("dumpDisplayAttribute")) == 0) {
+                    Json::Value json;
+                    client->dumpDisplayAttribute(json, type);
+                    printf("Dump display attribute:\n%s", meson::JsonValue2String(json).c_str());
+                } else if (memcmp("getCurrentSupportDeepColor", optarg, sizeof("getCurrentSupportDeepColor")) == 0) {
+                    std::string color;
+                    client->getCurrentSupportDeepColor(color, type);
+                    printf("current supported deepColor:%s\n", color.c_str());
+                } else if (memcmp("getWhiteBoardMode", optarg, sizeof("getWhiteBoardMode")) == 0) {
+                    bool mode = false;
+                    client->getWhiteBoardMode(mode);
+                    printf("get current white board %s \n", mode ? "true":"false");
+                } else if (memcmp("getQmsVrrCap", optarg, sizeof("getQmsVrrCap")) == 0) {
+                    bool qms = client->getQmsVrrCap();
+                    printf("Qms Vrr Cap :%d\n", qms);
+                } else {
+                    printf("raw cmd %s is not supported now\n", optarg);
+                }
                 break;
             case 'F':
                {
@@ -207,20 +225,6 @@ int main(int argc, char* argv[]) {
                       printf("set disableSidebandStream to %s \n", isDisable?"true":"false");
                   }
                 break;
-            case 'd':
-                {
-                    Json::Value json;
-                    client->dumpDisplayAttribute(json, type);
-                    printf("Dump display attribute:\n%s", meson::JsonValue2String(json).c_str());
-                }
-                break;
-            case 'D':
-                {
-                    std::string color;
-                    client->getCurrentSupportDeepColor(color, type);
-                    printf("current supported deepColor:%s\n", color.c_str());
-                }
-                break;
             case 'w':
                  if (optarg == NULL)
                      break;
@@ -231,13 +235,6 @@ int main(int argc, char* argv[]) {
                       }
                       client->setWhiteBoardMode(mode);
                       printf("set white board to %s \n", mode ? "true":"false");
-                  }
-                break;
-            case 'b':
-                  {
-                      bool mode = false;
-                      client->getWhiteBoardMode(mode);
-                      printf("get current white board %s \n", mode ? "true":"false");
                   }
                 break;
             case 'f':
@@ -284,27 +281,9 @@ int main(int argc, char* argv[]) {
                     print_usage(argv[0]);
                     break;
                 }
-                switch (strtol(optarg, NULL, 10)) {
-                    case DisplayAdapter::CONN_TYPE_DUMMY:
-                        type = DisplayAdapter::CONN_TYPE_DUMMY;
-                        printf("Connector type changed to CONN_TYPE_DUMMY: %d\n", type);
-                        break;
-                    case DisplayAdapter::CONN_TYPE_HDMI:
-                        type = DisplayAdapter::CONN_TYPE_HDMI;
-                        printf("Connector type changed to CONN_TYPE_HDMI: %d\n", type);
-                        break;
-                    case DisplayAdapter::CONN_TYPE_PANEL:
-                        type = DisplayAdapter::CONN_TYPE_PANEL;
-                        printf("Connector type changed to CONN_TYPE_PANEL: %d\n", type);
-                        break;
-                    case DisplayAdapter::CONN_TYPE_CVBS:
-                        type = DisplayAdapter::CONN_TYPE_CVBS;
-                        printf("Connector type changed to CONN_TYPE_CVBS: %d\n", type);
-                        break;
-                    default:
-                        print_usage(argv[0]);
-                        break;
-                }
+                type = static_cast<DisplayAdapter::ConnectorType>(strtol(optarg, NULL, 10));
+                // ref DisplayAdapter::ConnectorType
+                printf("Connector type changed to %d\n", type);
                 break;
             case 'm':
                 client->setPerferredMode(optarg, type);
@@ -324,6 +303,18 @@ int main(int argc, char* argv[]) {
                   {
                       printf("set the reverse type to  (%d)\n", (int)strtol(optarg, NULL, 10));
                       client->setReverseMode(strtol(optarg, NULL, 10));
+                  }
+                break;
+            case 'v':
+                 if (optarg == NULL)
+                     break;
+                  {
+                      bool isDisable = false;
+                      if (0 == memcmp("true", optarg, sizeof("true"))) {
+                            isDisable =true;
+                      }
+                      client->disableQms(isDisable);
+                      printf("set disable qms to %s \n", isDisable?"true":"false");
                   }
                 break;
             default:

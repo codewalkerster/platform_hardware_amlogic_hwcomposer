@@ -762,6 +762,11 @@ int32_t ModePolicy::setColorSpace(std::string &colorspace) {
     return 0;
 }
 
+int32_t ModePolicy::update() {
+    getConnectorData(&mConData, &mDvInfo);
+    return 0;
+}
+
 void ModePolicy::dump(String8 &dumpstr) {
     dumpstr.append("---------------------------------------------------------"
         "-----------------------------\n");

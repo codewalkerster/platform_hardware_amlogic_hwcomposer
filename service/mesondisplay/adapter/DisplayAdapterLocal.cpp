@@ -624,6 +624,28 @@ bool DisplayAdapterLocal::getDisplayAttribute(
     return ret;
 };
 
+bool DisplayAdapterLocal::disableQms(bool isDisable){
+    MesonHwc2::getInstance().disableQms(isDisable);
+    MESON_LOGD("disableQms set value:%s", isDisable ? "true" : "false");
+    return true;
+}
+
+bool DisplayAdapterLocal::getQmsVrrCap() {
+    ConnectorType displayType = DisplayAdapter::CONN_TYPE_HDMI;
+    drm_connector_type_t type;
+    bool value = false;
+    DisplayTypeConv(type, displayType);
+    if (DRM_MODE_CONNECTOR_INVALID_TYPE == type) {
+        MESON_LOGE("getQmsVrrCap invalid connector type");
+        return false;
+    }
+    GET_CRTC_BY_CONNECTOR(type);
+    if (connector)
+        value = connector->supportVrr();
+
+    return value;
+}
+
 bool DisplayAdapterLocal::getDisplayVsyncAndPeriod(int64_t& timestamp, int32_t& vsyncPeriodNanos) {
     MesonHwc2::getInstance().getDisplayVsyncAndPeriod(timestamp, vsyncPeriodNanos);
     //MESON_LOGV("getDisplayVsyncAndPeriod vsyncTime:%" PRId64 " ns period:%d ns",

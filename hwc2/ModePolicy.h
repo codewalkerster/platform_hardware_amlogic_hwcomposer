@@ -198,6 +198,7 @@ public:
     int32_t getPreferredHdrConversionType(void);
     int32_t setHdrConversionPolicy(bool passthrough, int32_t forceType);
     int32_t setAutoLowLatencyMode(bool enabled);
+    int32_t update();
 
     void dump(String8 &dumpstr) override;
 
