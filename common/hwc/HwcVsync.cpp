@@ -157,7 +157,7 @@ void * HwcVsync::vsyncThread(void * data) {
         }
 
         nsecs_t period;
-        if (pThis->mPreTimeStamp != 0) {
+        if (pThis->mPreTimeStamp != 0 && pThis->mVsyncType != DISPLAY_VIDEOTUNNEL) {
             period = timestamp - pThis->mPreTimeStamp;
         } else {
             period = pThis->mReqPeriod;
