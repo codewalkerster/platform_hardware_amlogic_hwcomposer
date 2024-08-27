@@ -80,6 +80,7 @@ public:
     static int32_t getSupportAiSrChannelNumber();
     static int32_t getSupportAiPqChannelNumber();
     static int32_t getSupportAiColorChannelNumber();
+    static bool getHdcpPolicy();
 
     static void dump(String8 & dumpstr);
 };

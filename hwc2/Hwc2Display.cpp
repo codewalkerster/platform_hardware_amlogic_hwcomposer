@@ -10,6 +10,7 @@
 #define LOG_NDEBUG 1
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
 #define MAX_FRAME_DELAY 10
+#define HDCPPOLICY (150000)
 
 #include <utils/Trace.h>
 #include <hardware/hwcomposer2.h>
@@ -641,11 +642,15 @@ void Hwc2Display::onModeChanged(int stage) {
     /*call hotplug out of lock, SF may call some hwc function to cause deadlock.*/
     if (bSendPlugIn && (mModeMgr->needCallHotPlug() || hdrCapsChanged)) {
         MESON_LOGD("onModeChanged mObserver->onHotplug(true) hdrCapsChanged:%d", hdrCapsChanged);
+        if (HwcConfig::getHdcpPolicy() && bNotifySC) {
+            usleep(HDCPPOLICY);
+        }
         // only clear layers when we can send hotplug event
         // as the framework display will recreate when it receive hotplug event
         if (!mFirstPresent && HwcConfig::primaryHotplugEnabled()) {
             cleanupBeforeDestroy();
         }
+
         mObserver->onHotplug(true);
         if (bNotifySC)
             sc_notify_hdmi_plugin();

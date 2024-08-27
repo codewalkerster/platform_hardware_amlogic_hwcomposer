@@ -64,6 +64,7 @@ soong_config_module_type {
         "enable_video_di",
         "enable_video_mosaic",
         "enable_uvm_detach",
+        "enable_hdcp_policy",
     ],
 
     properties: [
@@ -160,6 +161,10 @@ soong_config_bool_variable {
 
 soong_config_bool_variable {
     name: "enable_uvm_detach",
+}
+
+soong_config_bool_variable {
+    name: "enable_hdcp_policy",
 }
 
 meson_common_base_cc_defaults {
@@ -299,6 +304,9 @@ meson_common_base_cc_defaults {
 
         enable_uvm_detach:{
             cflags: ["-DENABLE_UVM_DETACH"],
+        },
+        enable_hdcp_policy:{
+            cflags: ["-DHWC_HDCP_POLICY"],
         },
     },
 }

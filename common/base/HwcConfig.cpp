@@ -399,6 +399,14 @@ bool HwcConfig::UvmDetachEnabled() {
 #endif
 }
 
+bool HwcConfig::getHdcpPolicy() {
+#ifdef HWC_HDCP_POLICY
+    return true;
+#else
+    return false;
+#endif
+}
+
 void HwcConfig::dump(String8 & dumpstr) {
     if (isHeadlessMode()) {
         dumpstr.appendFormat("\t HeadlessMode refreshrate: %d", headlessRefreshRate());
@@ -439,6 +447,8 @@ void HwcConfig::dump(String8 & dumpstr) {
             dumpstr.appendFormat("\t AiColorProcessor: %s", AiColorProcessorEnabled() ? "Y" : "N");
             dumpstr.append("\n");
             dumpstr.appendFormat("\t UvmDetach: %s", UvmDetachEnabled() ? "Y" : "N");
+            dumpstr.append("\n");
+            dumpstr.appendFormat("\t HwcHdcpPolicy: %s", getHdcpPolicy() ? "Y" : "N");
             dumpstr.append("\n");
         }
     }
