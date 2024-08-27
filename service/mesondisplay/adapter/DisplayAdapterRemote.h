@@ -59,6 +59,7 @@ public:
     bool setKeystoneCorrection(const string& params) override;
     bool setReverseMode(int type) override;
 
+    bool userSpaceHDCPTxAuth() override;
     static std::unique_ptr<DisplayAdapter> create();
     DisplayAdapterRemote();
     ~DisplayAdapterRemote() = default;

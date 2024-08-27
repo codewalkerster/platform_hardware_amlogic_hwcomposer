@@ -108,6 +108,8 @@ public:
     static std::shared_ptr<DisplayAdapter> create(DisplayAdapter::BackendType type);
     DisplayAdapterLocal();
     ~DisplayAdapterLocal() = default;
+
+    bool userSpaceHDCPTxAuth() override;
 private:
     DisplayAttributeInfo* getDisplayAttributeInfo(const string& name, ConnectorType displayType);
     DisplayAttributeInfo display_attrs[DA_DISPLAY_ATTRIBUTE__COUNT];

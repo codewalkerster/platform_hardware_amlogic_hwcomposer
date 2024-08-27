@@ -718,6 +718,23 @@ bool DisplayAdapterLocal::getDisplayVsyncAndPeriod(int64_t& timestamp, int32_t& 
     return true;
 }
 
+bool DisplayAdapterLocal::userSpaceHDCPTxAuth() {
+    ConnectorType displayType = DisplayAdapter::CONN_TYPE_HDMI;
+    drm_connector_type_t type;
+    bool value = false;
+    DisplayTypeConv(type, displayType);
+    if (DRM_MODE_CONNECTOR_INVALID_TYPE == type) {
+        MESON_LOGE("userSpaceHDCPTxAuth invalid connector type");
+        return false;
+    }
+    GET_CRTC_BY_CONNECTOR(type);
+    if (connector)
+        value = connector->userSpaceHDCPTxAuth();
+    else
+        MESON_LOGE("userSpaceHDCPTxAuth no hdmi connector");
+    return value;
+}
+
 bool DisplayAdapterLocal::setKeystoneCorrection(const string& params) {
     return MesonHwc2::getInstance().setKeystoneCorrection(params);
 }

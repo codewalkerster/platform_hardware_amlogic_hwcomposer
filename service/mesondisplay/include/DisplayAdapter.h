@@ -223,6 +223,7 @@ public:
 
     virtual ~DisplayAdapter() = default;
     DisplayAdapter() = default;
+    virtual bool userSpaceHDCPTxAuth() = 0;
 
 private:
     DisplayAdapter(const DisplayAdapter&) = delete;

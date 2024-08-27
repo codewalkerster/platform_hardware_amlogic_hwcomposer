@@ -332,7 +332,14 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
         } else {
             ret["value"] = "false";
         }
-
+    } else if (cmd == "userSpaceHDCPTxAuth") {
+        bool value = false;;
+        value = mAdapter->userSpaceHDCPTxAuth();
+        if (value == true) {
+            ret["value"] = "true";
+        } else {
+            ret["value"] = "false";
+        }
     } else {
         MESON_LOGE("CMD not implement: %s!", cmd.c_str());
     }

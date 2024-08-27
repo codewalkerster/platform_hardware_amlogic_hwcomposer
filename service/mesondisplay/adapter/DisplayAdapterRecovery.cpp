@@ -499,6 +499,11 @@ bool DisplayAdapterLocal::getDisplayVsyncAndPeriod(int64_t& vsyncTimestamp, int3
     return false;
 }
 
+bool DisplayAdapterLocal::userSpaceHDCPTxAuth() {
+    NOTIMPLEMENTED;
+    return false;
+}
+
 bool DisplayAdapterLocal::disableSidebandStream(bool isDisable){
     bool ret = false;
     UNUSED(isDisable);

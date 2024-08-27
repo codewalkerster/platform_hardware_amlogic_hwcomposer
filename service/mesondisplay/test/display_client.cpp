@@ -79,7 +79,8 @@ static void print_usage(const char* name) {
             "                              \teg: \"setDisplayConnector\" [connector type] TYPE could be like:\n"
             "                              \t    DUMMY\n"
             "                              \t    CVBS\n"
-            "                              \t    HDMI, HDMI is default connector\n", name);
+            "                              \t    HDMI, HDMI is default connector\n"
+            "                              \teg: \"userSpaceHDCPTxAuth\" \n", name);
 }
 
 int main(int argc, char* argv[]) {
@@ -237,6 +238,13 @@ int main(int argc, char* argv[]) {
                         printf("setFixedConnectorDisplay connector %s failed\n", argv[optind]);
                     }
                     optind++;
+                } else if (memcmp("userSpaceHDCPTxAuth", optarg, sizeof("userSpaceHDCPTxAuth")) == 0) {
+                    bool userSpaceHDCPTxAuth= false;
+                    userSpaceHDCPTxAuth = client->userSpaceHDCPTxAuth();
+                    if (userSpaceHDCPTxAuth)
+                        printf("userSpaceHDCPTxAuth\n");
+                    else
+                        printf("not userSpaceHDCPTxAuth\n");
                 } else {
                     printf("raw cmd %s is not supported now\n", optarg);
                 }
