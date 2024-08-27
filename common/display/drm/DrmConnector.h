@@ -72,6 +72,7 @@ public:
 
     bool isReady() override;
     bool supportVrr() override;
+    bool userSpaceHDCPTxAuth() override;
 
     /*drm package internal use.*/
 public:

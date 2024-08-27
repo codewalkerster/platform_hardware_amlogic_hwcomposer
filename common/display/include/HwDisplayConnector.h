@@ -103,6 +103,7 @@ public:
     virtual bool isReady() {return true;};
     virtual bool supportVrr() {return false;};
     virtual void disableQms(bool /* state */) { };
+    virtual bool userSpaceHDCPTxAuth() {return true;};
 
     virtual void getHdmiDcCap(char* dc_cap __unused, int32_t len __unused) {};
 };

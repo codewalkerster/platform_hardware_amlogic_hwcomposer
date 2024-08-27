@@ -2318,10 +2318,18 @@ bool ModePolicy::applyDisplaySetting(bool force) {
                 MESON_LOGE("usleep interrupt!\n");
         }
         // stop hdcp tx
-        mTxAuth->stop();
+        if (mConnector && mConnector->userSpaceHDCPTxAuth()) {
+            mTxAuth->stop();
+        } else {
+            MESON_LOGI(" user space not process hdcp\n");
+        }
     } else if (OUTPUT_MODE_STATE_INIT == mState) {
         // stop hdcp tx
-        mTxAuth->stop();
+        if (mConnector && mConnector->userSpaceHDCPTxAuth()) {
+            mTxAuth->stop();
+        } else {
+            MESON_LOGI(" user space not process hdcp\n");
+        }
         char fail_case[PROPERTY_VALUE_MAX] = {0};
         char defVal[] = "4";
         sys_get_string_prop_default(HDCP_TX_AUTH_FAIL, fail_case, defVal);
@@ -2451,11 +2459,11 @@ bool ModePolicy::applyDisplaySetting(bool force) {
         MESON_LOGI("hdcp disable\n");
     } else {
         if (isNeedChange) {
-            if (!cvbsMode) {
+            if (!cvbsMode && mConnector->userSpaceHDCPTxAuth()) {
                 mTxAuth->start();
             }
         } else if (OUTPUT_MODE_STATE_INIT == mState) {
-            if (!cvbsMode) {
+            if (!cvbsMode && mConnector->userSpaceHDCPTxAuth()) {
                 mTxAuth->start();
             }
         }

@@ -120,6 +120,7 @@ int32_t DrmConnector::loadProperties(drmModeConnectorPtr p __unused) {
         {DRM_HDMI_PROP_COLORSPACE, &mColorSpace},
         {DRM_HDMI_PROP_COLORDEPTH, &mColorDepth},
         {DRM_HDMI_PROP_READY, &mReady},
+        {DRM_HDMI_PROP_HDCP_USER, &mUserHDCPTxAuth},
 //        {DRM_HDMI_PROP_HDRCAP, &mHdrCaps},
         {DRM_HDMI_PROP_HDR_STATUS, &mHdrStatus},
         {DRM_HDMI_PROP_CONTENT_TYPE, &mContentType},
@@ -268,6 +269,13 @@ bool DrmConnector::supportVrr() {
     return false;
 }
 
+
+bool DrmConnector::userSpaceHDCPTxAuth() {
+    if (mUserHDCPTxAuth && mUserHDCPTxAuth->getValue() == 0)
+        return false;
+
+    return true;
+}
 
 /*
  * 1. check 4k30 DV mode
