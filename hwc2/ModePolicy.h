@@ -42,7 +42,6 @@
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"
 #define PROP_DISPLAY_SIZE_CHECK         "vendor.display-size.check"
 #define PROP_ENABLE_SDR2HDR             "ro.vendor.sdr2hdr.enable"
-#define PROP_HDR_RESOLUTION_PRIORITY    "persist.vendor.hdr.resolution.priority"
 
 #define PROP_DISPLAY_SIZE               "vendor.display-size"
 #define PROP_DISPLAY_ALLM               "vendor.allm.support"

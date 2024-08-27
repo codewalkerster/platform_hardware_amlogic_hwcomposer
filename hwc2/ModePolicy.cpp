@@ -386,7 +386,11 @@ bool ModePolicy::isTvSupportHDR() {
 }
 
 bool ModePolicy::isHdrResolutionPriority() {
-    return sys_get_bool_prop(PROP_HDR_RESOLUTION_PRIORITY, true);
+    char isHdrResolutionPriority[MESON_MODE_LEN] = {0};
+    if (DISPLAY_TYPE_TV == mDisplayType) {
+        return false;
+    }
+    return !getBootEnv(UBOOTENV_HDR_RESOLUTION_PRIORITY, isHdrResolutionPriority) || strcmp(isHdrResolutionPriority, "true") == 0;
 }
 
 bool ModePolicy::isFrameratePriority() {
