@@ -43,6 +43,7 @@ DrmCrtc::DrmCrtc(int drmFd, drmModeCrtcPtr p, uint32_t pipe)
     }
 
     mConnectorId = 0;
+    mPrevConnectorId = 0;
     memset(&mMesonMode, 0, sizeof(mMesonMode));
 
     MESON_LOGD("DrmCrtc init pipe(%d)-id(%d), mode (%s),active(%" PRId64 ")",
@@ -298,6 +299,23 @@ int32_t DrmCrtc::setModeLocked(drm_mode_info_t & mode, bool seamless) {
 
     connector->applyConnectorProps(req);
 
+    /* if connector changed, set previous connector crtc id to 0. */
+    if (mPrevConnectorId != mConnectorId) {
+#if HWC_DISPLAY_NUM == 1
+        std::shared_ptr<DrmProperty> prevCrtcId;
+        std::shared_ptr<HwDisplayConnector> prevConnector;
+        prevConnector = getDrmDevice()->getConnectorById(mPrevConnectorId);
+        if (prevConnector) {
+            ((DrmConnector *)(prevConnector.get()))->getCrtcProp(prevCrtcId);
+            if (prevCrtcId) {
+                prevCrtcId->setValue(0);
+                prevCrtcId->apply(req);
+            }
+        }
+#endif
+        mPrevConnectorId = mConnectorId;
+    }
+
     /*set prop value*/
     MESON_ASSERT(crtcid->getValue() == mId, "crtc/connector NOT bind?!");
     mActive->setValue(1);
@@ -496,6 +514,7 @@ int32_t DrmCrtc::pageFlip(int32_t & out_fence) {
 
 int DrmCrtc::setConnectorId(uint32_t connectorId) {
     std::lock_guard<std::mutex> lock(mMutex);
+    mPrevConnectorId = mConnectorId;
     mConnectorId = connectorId;
     return 0;
 }

@@ -640,20 +640,6 @@ bool ModePolicy::setPolicy(int32_t policy) {
 //TODO::  refactor to a thread to handle hotplug
 void ModePolicy::onHotplug(bool connected) {
     MESON_LOGD("ModePolicy handle hotplug:%d", connected);
-    //plugout or suspend,set dummy_l
-    if (!connected) {
-        std::string displayMode("dummy_l");
-        if (isVMXCertification()) {
-            displayMode = "576cvbs";
-        } else {
-            sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "1");
-            usleep(100000); // add 100ms delay after av mute
-        }
-        setDisplayMode(displayMode);
-        return;
-    }
-
-
     //hdmi connect
     setSourceDisplay(OUTPUT_MODE_STATE_POWER);
 }
@@ -2693,6 +2679,8 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
     int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     if (mConnector->getType() == DRM_MODE_CONNECTOR_VIRTUAL) {
         if (strcmp(curDisplayMode, "dummy_l") != 0 || !mConnector->isReady()) {
+            sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "1");
+            usleep(100000); // add 100ms delay after av mute
             setDisplayMode("dummy_l");
         }
         return;
@@ -2702,6 +2690,8 @@ void ModePolicy::setSourceDisplay(output_mode_state state) {
            getPosition("576cvbs", position);
            setPosition("576cvbs", position[0], position[1],position[2], position[3]);
         } else {
+           sysfs_set_string(DISPLAY_HDMI_AVMUTE_SYSFS, "1");
+           usleep(100000); // add 100ms delay after av mute
            setDisplayMode("dummy_l");
         }
         return;

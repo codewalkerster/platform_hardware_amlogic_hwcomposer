@@ -102,6 +102,7 @@ protected:
 
     std::mutex mMutex;
     uint32_t mConnectorId;
+    uint32_t mPrevConnectorId;
     std::vector<drm_mode_info> mPendingModes;
 
     std::vector<drm_hdr_conversion_capability> mDrmHdrConversionCaps;
