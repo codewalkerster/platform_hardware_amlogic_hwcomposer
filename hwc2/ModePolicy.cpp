@@ -1190,13 +1190,13 @@ void ModePolicy::getPosition(const char* curMode, int *position) {
 
         for (auto it = connecterModeList.begin(); it != connecterModeList.end(); it++) {
             if (mConnector->getType() == DRM_MODE_CONNECTOR_TV) {
-                if (strstr(curMode, it->second.name)) {
+                if (!strcmp(curMode, it->second.name)) {
                     strlcpy(keyValue, curMode, sizeof(keyValue));
                     mode = it->second;
                     break;
                 }
             } else {
-                if (strstr(curMode, it->second.name)) {
+                if (!strcmp(curMode, it->second.name)) {
                     if (strstr(it->second.name, MODE_4K2KSMPTE_PREFIX)) {
                         strlcpy(keyValue, "4k2ksmpte", sizeof(keyValue));
                     } else if (strstr(it->second.name, MODE_PANEL)) {
@@ -1259,12 +1259,12 @@ void ModePolicy::setPosition(const char* curMode, int left, int top, int width, 
 
         for (auto it = connecterModeList.begin(); it != connecterModeList.end(); it++) {
             if (mConnector->getType() == DRM_MODE_CONNECTOR_TV) {
-                if (strstr(curMode, it->second.name)) {
+                if (!strcmp(curMode, it->second.name)) {
                     strlcpy(keyValue, curMode, sizeof(keyValue));
                     break;
                 }
             } else {
-                if (strstr(curMode, it->second.name)) {
+                if (!strcmp(curMode, it->second.name)) {
                      if (strstr(it->second.name, MODE_4K2KSMPTE_PREFIX)) {
                         strlcpy(keyValue, "4k2ksmpte", sizeof(keyValue));
                     } else if (strstr(it->second.name, MODE_PANEL)) {
