@@ -126,6 +126,7 @@ protected:
     std::shared_ptr<DrmProperty> mUpdate;
     std::shared_ptr<DrmProperty> mHdrStatus;
     std::shared_ptr<DrmProperty> mContentType;
+    std::shared_ptr<DrmProperty> mContentTypeCaps;
     std::shared_ptr<DrmProperty> mAVMute;
     std::shared_ptr<DrmProperty> mDvCaps;
     std::shared_ptr<DrmProperty> mReady;

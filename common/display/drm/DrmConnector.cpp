@@ -55,7 +55,6 @@ static const u8 default_1080p_edid[EDID_MIN_LEN] = {
 extern int32_t parseHdmiHdrCapabilities(drm_hdr_capabilities & hdrCaps);
 extern bool loadHdmiCurrentHdrType(std::string & hdrType);
 extern bool loadHdmiDvCap(std::string & dv_cap);
-extern int32_t loadHdmiSupportedContentTypes(std::vector<uint32_t> & supportedContentTypes);
 extern int32_t setHdmiContentType(uint32_t contentType);
 extern int32_t switchRatePolicy(bool fracRatePolicy);
 extern bool getFracModeStatus();
@@ -92,6 +91,7 @@ int32_t DrmConnector::loadProperties(drmModeConnectorPtr p __unused) {
 //        {DRM_HDMI_PROP_HDRCAP, &mHdrCaps},
         {DRM_HDMI_PROP_HDR_STATUS, &mHdrStatus},
         {DRM_HDMI_PROP_CONTENT_TYPE, &mContentType},
+        {DRM_HDMI_PROP_CONTENT_TYPE_CAP, &mContentTypeCaps},
         {DRM_HDMI_PROP_HDMI_AV_MUTE, &mAVMute},
         {DRM_HDMI_PROP_DV_CAP, &mDvCaps},
     };
@@ -676,8 +676,17 @@ void DrmConnector::getSupportedContentTypes(
     std::vector<uint32_t> & supportedContentTypesOut) {
     if (mType != DRM_MODE_CONNECTOR_HDMIA)
         return;
+    supportedContentTypesOut.clear();
 
-    loadHdmiSupportedContentTypes(supportedContentTypesOut);
+    if (mContentTypeCaps) {
+        uint32_t contentTypeCaps = mContentTypeCaps->getValue();
+        for (uint32_t i = CONTENT_TYPE_GRAPHICS; i <= CONTENT_TYPE_GAME; ++i) {
+            if (contentTypeCaps & (1 << i)) {
+                supportedContentTypesOut.push_back(i);
+                MESON_LOGD("%s: DrmConnector %s get supported content type %d", __func__, getName(), i);
+            }
+        }
+    }
 }
 
 int32_t DrmConnector::setContentType(uint32_t contentType) {
