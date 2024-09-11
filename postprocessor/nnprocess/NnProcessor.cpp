@@ -564,8 +564,10 @@ int32_t NnProcessor::teardown() {
     if (mInited && mThread) {
         pthread_join(mThread, NULL);
         mThread = 0;
-        if (mAllocThread != 0)
+        if (mAllocThread != 0) {
             pthread_join(mAllocThread, NULL);
+            mAllocThread = 0;
+        }
 
         mAllocProcessDone = false;
     }
@@ -767,7 +769,6 @@ void * NnProcessor::allocThread(void * data) {
     pThis->allocThreadProcess();
 
     ALOGD("%s exit.\n", __FUNCTION__);
-    pThis->mAllocThread = 0;
     pthread_exit(0);
     return NULL;
 }
