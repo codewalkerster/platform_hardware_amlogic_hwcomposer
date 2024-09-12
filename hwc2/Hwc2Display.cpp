@@ -145,7 +145,6 @@ int32_t Hwc2Display::setModeMgr(std::shared_ptr<HwcModeMgr> & mgr) {
         HwcConfig::getFramebufferSize(0, fbW, fbH);
         mScaleValue = (float)fbW/(float)mDisplayMode.pixelW;
         mPowerMode->setConnectorStatus(true);
-        getActiveConfigWidthAndHeight();
     }
     MESON_LOG_FUN_LEAVE();
     return 0;
@@ -1785,7 +1784,16 @@ hwc2_error_t  Hwc2Display::getDisplayAttribute(
 hwc2_error_t Hwc2Display::getActiveConfig(
     hwc2_config_t* outConfig) {
     if (mModeMgr != NULL) {
-        return (hwc2_error_t)mModeMgr->getActiveConfig(outConfig, CALL_FROM_SF);
+        hwc2_error_t ret = (hwc2_error_t)mModeMgr->getActiveConfig(outConfig, CALL_FROM_SF);
+        if (mModeMgr->getDisplayAttribute(*outConfig,
+                HWC2_ATTRIBUTE_WIDTH, &mConfigWidth) != HWC2_ERROR_NONE) {
+            ALOGE("[%s]: getHwcDisplayHeight failed!", __func__);
+        }
+        if (mModeMgr->getDisplayAttribute(*outConfig,
+                HWC2_ATTRIBUTE_HEIGHT, &mConfigHeight) != HWC2_ERROR_NONE) {
+            ALOGE("[%s]: getHwcDisplayHeight failed!", __func__);
+        }
+        return ret;
     } else {
         MESON_LOGE("Hwc2Display (%s) getActiveConfig miss valid DisplayConfigure.",
             getName());
