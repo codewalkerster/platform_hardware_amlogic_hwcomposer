@@ -68,6 +68,8 @@ public:
     bool hasDummyConnector();
     virtual void addVirtualDisplay(std::shared_ptr<HwcDisplay> disp __unused);
     std::shared_ptr<VdinPostProcessor> mVdinPostProcessor;
+    virtual void setFakeHdmiPlugOut(bool ) {};
+    virtual void setFixedConnectorType(drm_connector_type_t ) {};
 
 protected:
     class PipeCfg {

@@ -39,7 +39,8 @@ public:
 
     void setSuspendState(bool status);
     bool getSuspendState(void);
-
+    void notHandleHotplug(bool enable) { mNotHandleHotplug = enable; };
+    bool getNotHandleHotplugStatus() { return mNotHandleHotplug; };
 
 protected:
     std::multimap<drm_display_event, HwDisplayEventHandler* >
@@ -49,6 +50,7 @@ protected:
     int mEventSocket;
     int mCtlInFd;
     int mCtlOutFd;
+    bool mNotHandleHotplug = false;
 
 protected:
     static void * ueventThread(void * data);

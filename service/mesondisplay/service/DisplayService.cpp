@@ -320,6 +320,19 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
         if (!in.isMember("value"))
             goto OUT;
         mAdapter->setReverseMode(in["value"].asUInt());
+    } else if (cmd == "setFixedConnectorDisplay") {
+        if (!in.isMember("p_connectorType")) {
+            out["ret"] = ret;
+            return;
+        }
+        bool value = false;
+        value = mAdapter->setFixedConnectorDisplay((ConnectorType)in["p_connectorType"].asInt());
+        if (value == true) {
+            ret["value"] = "true";
+        } else {
+            ret["value"] = "false";
+        }
+
     } else {
         MESON_LOGE("CMD not implement: %s!", cmd.c_str());
     }

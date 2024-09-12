@@ -126,7 +126,15 @@ drm_connector_type_t FixedDisplayPipe::getConnectorCfg(uint32_t hwcid) {
         switch (mEventState) {
         // plug out
         case DRM_EVENT_DISABLE :
-            if (isVMXCertification() && connector != DRM_MODE_CONNECTOR_HDMIA) {
+            if (mFakeHdmiPlugOut) {
+                if (mFixedConnectorType == DRM_MODE_CONNECTOR_TV) {
+                    connector = DRM_MODE_CONNECTOR_TV;
+                } else if (mFixedConnectorType == DRM_MODE_CONNECTOR_VIRTUAL && hasDummyConnector()) {
+                    connector = DRM_MODE_CONNECTOR_VIRTUAL;
+                } else {
+                    connector = DRM_MODE_CONNECTOR_HDMIA;
+                }
+            } else if ((isVMXCertification() && connector != DRM_MODE_CONNECTOR_HDMIA)) {
                 connector = DRM_MODE_CONNECTOR_TV;
             } else {
                 connector = hasDummyConnector() ?
@@ -154,7 +162,9 @@ drm_connector_type_t FixedDisplayPipe::getConnectorCfg(uint32_t hwcid) {
         case DRM_EVENT_RESUME:
         // init
         default:
-            if (hwConnector->isConnected()) {
+            if (mFakeHdmiPlugOut) {
+                connector = mFixedConnectorType;
+            } else if (hwConnector->isConnected()) {
                 connector = DRM_MODE_CONNECTOR_HDMIA;
             } else {
                 if ((isVMXCertification() || !hasHdmiConnected()) &&

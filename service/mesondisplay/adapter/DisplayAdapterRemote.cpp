@@ -248,6 +248,23 @@ bool DisplayAdapterRemote::setDisplayRect(const Rect rect, ConnectorType display
     return true;
 }
 
+bool DisplayAdapterRemote::setFixedConnectorDisplay(ConnectorType connectorType) {
+    Json::Value cmd, ret;
+    IF_SERVER_NOT_READY_RETURN(false);
+    cmd["cmd"] = "setFixedConnectorDisplay";
+    cmd["p_connectorType"] = static_cast<int>(connectorType);;
+    ipc->send_request_wait_reply(cmd, ret);
+    if (ret.isMember("ret") && ret["ret"]["value"].isString()) {
+        if (ret["ret"]["value"].asString() == "true") {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
 bool DisplayAdapterRemote::getDisplayRect(Rect& rect, ConnectorType displayType) {
     Json::Value cmd, ret;
     IF_SERVER_NOT_READY_RETURN(false);

@@ -180,6 +180,7 @@ public:
     virtual bool setWBDisplayFrame(int x, int y) = 0;
     virtual bool hideVideoLayer(bool hide) = 0;
     virtual bool enableSyncProtection(bool mode) = 0;
+    virtual bool setFixedConnectorDisplay(ConnectorType connectorType) = 0;
 
     virtual bool setHdrConversionStrategy(uint32_t passThrough, uint32_t forcemode);
     virtual bool getHdrSdrRatio(float & ratio, ConnectorType displayType) = 0;

@@ -216,6 +216,27 @@ int main(int argc, char* argv[]) {
                 } else if (memcmp("getQmsVrrCap", optarg, sizeof("getQmsVrrCap")) == 0) {
                     bool qms = client->getQmsVrrCap();
                     printf("Qms Vrr Cap :%d\n", qms);
+                } else if (memcmp("setDisplayConnector", optarg, sizeof("setDisplayConnector")) == 0) {
+                    if (optind + 1 > argc) {
+                        printf("miss parameter");
+                        break;
+                    }
+
+                    DisplayAdapter::ConnectorType connector = DisplayAdapter::CONN_TYPE_UNKNOWN;
+                    if (strcmp(argv[optind], "CVBS") == 0) {
+                        connector = DisplayAdapter::CONN_TYPE_CVBS;
+                    } else if (strcmp(argv[optind], "DUMMY") == 0) {
+                        connector = DisplayAdapter::CONN_TYPE_DUMMY;
+                    } else if (strcmp(argv[optind], "HDMI") == 0) {
+                        connector = DisplayAdapter::CONN_TYPE_HDMIA;
+                    }
+
+                    if (client->setFixedConnectorDisplay(connector)) {
+                        printf("setFixedConnectorDisplay connector %s success\n", argv[optind]);
+                    } else {
+                        printf("setFixedConnectorDisplay connector %s failed\n", argv[optind]);
+                    }
+                    optind++;
                 } else {
                     printf("raw cmd %s is not supported now\n", optarg);
                 }

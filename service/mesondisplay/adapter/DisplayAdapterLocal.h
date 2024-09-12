@@ -90,6 +90,8 @@ public:
     bool setWBDisplayFrame(int x, int y) override;
     bool hideVideoLayer(bool hide) override;
     bool enableSyncProtection(bool mode) override;
+    bool setFixedConnectorDisplay(ConnectorType connectorType) override;
+
     bool disableSidebandStream(bool isDisable) override;
     bool setHdrConversionStrategy(uint32_t passThrough, uint32_t forceMode) override;
     bool getHdrSdrRatio(float & ratio, ConnectorType displayType) override;

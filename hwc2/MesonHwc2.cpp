@@ -27,6 +27,7 @@
 #include <misc.h>
 #include <systemcontrol.h>
 #include <am_gralloc_ext.h>
+#include <HwDisplayManager.h>
 
 #include "MesonHwc2Defs.h"
 #include "MesonHwc2.h"
@@ -1298,11 +1299,45 @@ bool MesonHwc2::setReverseMode(int type) {
     hwcDisplay->setReverseMode(type);
     return true;
 }
+
 bool MesonHwc2::getConnectorType(uint32_t displayId, drm_connector_type_t & connectorType) {
     if (displayId < 0|| displayId > HwcConfig::getDisplayNum()) {
         return false;
     }
     GET_HWC_DISPLAY(displayId);
     connectorType = hwcDisplay->getConnectorType();
+    return true;
+}
+
+bool MesonHwc2::setFixedConnectorDisplay(drm_connector_type_t connectorType) {
+    GET_HWC_DISPLAY(0);
+    std::shared_ptr<HwDisplayConnector> hwConnector;
+    if (getHwDisplayManager()->getConnector(hwConnector, connectorType) != 0) {
+        MESON_LOGD("in Display 0 not have connectorType %d", connectorType);
+        return false;
+    }
+    bool enable = connectorType != DRM_MODE_CONNECTOR_HDMIA;
+    if (hwcDisplay->needSwitchConnector()) {
+        HwDisplayEventListener* listener = &(HwDisplayEventListener::getInstance());
+        if (enable) {
+            mDisplayPipe->setFakeHdmiPlugOut(enable);
+            mDisplayPipe->setFixedConnectorType(connectorType);
+            mDisplayPipe->handleEvent(DRM_EVENT_HDMITX_HOTPLUG, DRM_EVENT_DISABLE);
+            listener->notHandleHotplug(enable);
+        } else {
+            if (listener->getNotHandleHotplugStatus()) {
+                listener->notHandleHotplug(enable);
+                getHwDisplayManager()->getConnector(hwConnector, DRM_MODE_CONNECTOR_HDMIA);
+                if (hwConnector.get() && hwConnector->isConnected()) {
+                    mDisplayPipe->handleEvent(DRM_EVENT_HDMITX_HOTPLUG, DRM_EVENT_ENABLE);
+                }
+                mDisplayPipe->setFixedConnectorType(DRM_MODE_CONNECTOR_HDMIA);
+                mDisplayPipe->setFakeHdmiPlugOut(enable);
+            }
+        }
+    } else {
+        MESON_LOGD("in Display 0 connectorType %d can't be switched", connectorType);
+        return false;
+    }
     return true;
 }

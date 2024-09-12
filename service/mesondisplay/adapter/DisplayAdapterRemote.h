@@ -45,6 +45,8 @@ public:
     bool getHdrSdrRatio(float & ratio, ConnectorType displayType) override;
     bool disableQms(bool isDisable) override;
     bool getQmsVrrCap() override;
+    bool setFixedConnectorDisplay(ConnectorType connectorType) override;
+
 
     bool dumpDisplayAttribute(Json::Value& json, ConnectorType displayType) override;
     bool enableSyncProtection(bool mode) override;

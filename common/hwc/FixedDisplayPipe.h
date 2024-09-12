@@ -18,6 +18,8 @@ public:
 
     int32_t init(std::map<uint32_t, std::shared_ptr<HwcDisplay>> & hwcDisps);
     void handleEvent(drm_display_event event, int val);
+    void setFakeHdmiPlugOut(bool status) { mFakeHdmiPlugOut = status; };
+    void setFixedConnectorType(drm_connector_type_t type) { mFixedConnectorType = type; };
 
 protected:
     int32_t getPipeCfg(uint32_t hwcid, PipeCfg & cfg);
@@ -29,6 +31,9 @@ protected:
 
     int32_t getPostProcessor(
         hwc_post_processor_t type, std::shared_ptr<HwcPostProcessor> & processor);
+private:
+    bool mFakeHdmiPlugOut = false;
+    drm_connector_type_t mFixedConnectorType = DRM_MODE_CONNECTOR_HDMIA;
 
 };
 

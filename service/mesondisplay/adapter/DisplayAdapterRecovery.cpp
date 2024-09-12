@@ -560,6 +560,10 @@ std::shared_ptr<DisplayAdapter> DisplayAdapterLocal::create(DisplayAdapter::Back
 
 std::shared_ptr<DisplayAdapter> DisplayAdapterCreateLocal(DisplayAdapter::BackendType type) {
     return DisplayAdapterLocal::create(type);
+}
+
+bool DisplayAdapterLocal::setFixedConnectorDisplay(ConnectorType) {
+    return false;
 };
 
 }; //namespace meson

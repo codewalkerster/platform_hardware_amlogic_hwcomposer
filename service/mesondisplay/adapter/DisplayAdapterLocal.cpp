@@ -722,6 +722,16 @@ bool DisplayAdapterLocal::setKeystoneCorrection(const string& params) {
     return MesonHwc2::getInstance().setKeystoneCorrection(params);
 }
 
+bool DisplayAdapterLocal::setFixedConnectorDisplay(ConnectorType connectorType) {
+    drm_connector_type_t type;
+    DisplayTypeConv(type, connectorType);
+    if (DRM_MODE_CONNECTOR_INVALID_TYPE == type) {
+        MESON_LOGE("setFixedConnectorDisplay invalid connector type");
+        return false;
+    }
+    return MesonHwc2::getInstance().setFixedConnectorDisplay(type);
+}
+
 bool DisplayAdapterLocal::setReverseMode(int type) {
     return MesonHwc2::getInstance().setReverseMode(type);
 }
