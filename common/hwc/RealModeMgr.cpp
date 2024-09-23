@@ -40,6 +40,9 @@ static const char* DISPLAY_MODE_LIST[] = {
     "480cvbs",      // MODE_480CVBS
     "576p50hz",     // MODE_576P
     "576cvbs",      // MODE_576CVBS
+    "720p24hz",     // MODE_720P24HZ
+    "720p25hz",     // MODE_720P25HZ
+    "720p30hz",     // MODE_720P30HZ
     "720p48hz",     // MODE_720P48HZ
     "720p50hz",     // MODE_720P50HZ
     "720p60hz",     // MODE_720P
