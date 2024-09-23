@@ -642,7 +642,7 @@ bool ModePolicy::setPolicy(int32_t policy) {
 }
 
 //TODO::  refactor to a thread to handle hotplug
-void ModePolicy::onHotplug(bool connected) {
+void ModePolicy::onHotplug([[maybe_unused]] bool connected) {
     MESON_LOGD("ModePolicy handle hotplug:%d", connected);
     //hdmi connect
     setSourceDisplay(OUTPUT_MODE_STATE_POWER);
