@@ -1804,11 +1804,36 @@ int32_t ModePolicy::getPreferredHdrConversionType(void) {
         char user_hdr_type[MESON_MODE_LEN] = {0};
         memset(user_hdr_type, 0, MESON_MODE_LEN);
         bool ret = getBootEnv(UBOOTENV_USER_PREFERRED_HDR_TYPE, user_hdr_type);
-        int32_t allowedHdrType = strtol(user_hdr_type, NULL, 10);
+        uint32_t allowedHdrType = strtol(user_hdr_type, NULL, 10);
         if (ret) {
             allowedHdrType = strtol(user_hdr_type, NULL, 10);
         } else {
-            allowedHdrType = 0; //all hdr enable as default
+            /*
+             * config hdr default value base driver support hdr conversion capability
+             */
+            std::vector<drm_hdr_conversion_capability> HdrConversionCaps;
+
+            mCrtc->getConversionCaps(HdrConversionCaps);
+
+            for (auto i = 0; i < HdrConversionCaps.size(); i++) {
+                if (HdrConversionCaps[i].outputType == DRM_DOLBY_VISION) {
+                    allowedHdrType = allowedHdrType | (1 << HAL_HDR_DOLBY_VISION);
+                } else if (HdrConversionCaps[i].outputType == DRM_HDR10) {
+                    allowedHdrType = allowedHdrType | (1 << HAL_HDR_HDR10);
+                } else if (HdrConversionCaps[i].outputType == DRM_HLG) {
+                    allowedHdrType = allowedHdrType | (1 << HAL_HDR_HLG);
+                }
+            }
+            /*
+             * bit0-bit4 for hdr type and 1 is disable 0 is enable
+             */
+            uint32_t userHdrType = 0;
+            userHdrType = userHdrType | (1 << HAL_HDR_DOLBY_VISION);
+            userHdrType = userHdrType | (1 << HAL_HDR_HDR10);
+            userHdrType = userHdrType | (1 << HAL_HDR_HLG);
+            userHdrType = userHdrType | (1 << DRM_INVALID);
+            allowedHdrType ^= userHdrType;
+            allowedHdrType &= userHdrType;
         }
 
         //force SDR when autoAllowedHdrTypes are empty on system-preferred conversion
