@@ -489,7 +489,7 @@ void MultiplanesWithHRComposition::handleNonLegacySidebandVideoFbs(
 
                 if ((videoType & AM_VIDEO_8K) == AM_VIDEO_8K) {
                     MESON_LOGV("%s, VideoPlane can not support 8K video "
-                        "when refresh rate greater then DEFAULT",
+                        "when refresh rate greater than DEFAULT",
                         __func__);
                     fb->mCompositionType = MESON_COMPOSITION_CLIENT;
                     continue;
