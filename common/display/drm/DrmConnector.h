@@ -130,6 +130,14 @@ protected:
     std::shared_ptr<DrmProperty> mAVMute;
     std::shared_ptr<DrmProperty> mDvCaps;
     std::shared_ptr<DrmProperty> mReady;
+    std::shared_ptr<DrmProperty> mEdidValid;
+    std::shared_ptr<DrmProperty> mUserHDCPTxAuth;
+    std::shared_ptr<DrmProperty> mHdmiUsed;
+    std::shared_ptr<DrmProperty> mSinkType;
+    std::shared_ptr<DrmProperty> mRxHdrCap;
+    std::shared_ptr<DrmProperty> mHdrStaticMeta;
+    std::shared_ptr<DrmProperty> mAllmCap;
+
     /*for lcd now*/
     std::shared_ptr<DrmProperty> mMesonConnectorType;
     /* for vrr */

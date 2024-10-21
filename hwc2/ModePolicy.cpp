@@ -1369,19 +1369,7 @@ bool ModePolicy::isMatchMode(char* curmode, const char* outputmode) {
 }
 
 bool ModePolicy::isTvSupportALLM() {
-    char allm_mode_cap[PROP_VALUE_MAX];
-    memset(allm_mode_cap, 0, PROP_VALUE_MAX);
-    int ret = 0;
-
-    sysfs_get_string(AUTO_LOW_LATENCY_MODE_CAP, allm_mode_cap, PROP_VALUE_MAX);
-
-    for (int i = 0; i < ARRAY_SIZE(ALLM_MODE_CAP); i++) {
-        if (!strncmp(allm_mode_cap, ALLM_MODE_CAP[i], strlen(ALLM_MODE_CAP[i]))) {
-            ret = i;
-        }
-    }
-
-    return (ret == 1) ? true : false;
+    return mConnector->isTvSupportALLM();
 }
 
 bool ModePolicy::getContentTypeSupport(const char* type) {

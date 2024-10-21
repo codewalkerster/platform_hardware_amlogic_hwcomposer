@@ -71,6 +71,12 @@
 #define DRM_HDMI_PROP_HDMI_AV_MUTE   "MESON_DRM_HDMITX_PROP_AVMUTE"
 #define DRM_HDMI_PROP_DV_CAP         "dv_cap"
 #define DRM_HDMI_PROP_READY          "ready"
+#define DRM_HDMI_PROP_EDID_VALID     "edid_valid"
+#define DRM_HDMI_PROP_HDCP_USER      "hdcp_user"
+#define DRM_HDMI_PROP_FRAC_RATE_POLICY "FRAC_RATE_POLICY"
+#define DRM_HDMI_PROP_HDMI_USED      "hdmi_used"
+#define DRM_HDMI_PROP_SINK_TYPE      "sink_type"
+#define DRM_HDMI_PROP_ALLM_CAP       "allm_cap"
 
 /*meson prop*/
 #define DRM_CONNECTOR_PROP_UPDATE "UPDATE"

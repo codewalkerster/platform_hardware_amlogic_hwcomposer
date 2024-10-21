@@ -94,6 +94,7 @@ int32_t DrmConnector::loadProperties(drmModeConnectorPtr p __unused) {
         {DRM_HDMI_PROP_CONTENT_TYPE_CAP, &mContentTypeCaps},
         {DRM_HDMI_PROP_HDMI_AV_MUTE, &mAVMute},
         {DRM_HDMI_PROP_DV_CAP, &mDvCaps},
+        {DRM_HDMI_PROP_ALLM_CAP, &mAllmCap},
     };
     const int connectorPropsNum = sizeof(connectorProps)/sizeof(connectorProps[0]);
 
@@ -511,7 +512,11 @@ bool DrmConnector:: isTvSupportALLM() {
     if (isTvType())
         return true;
 
-    return sysfs_get_int(HDMI_TX_ALLM_MODE, 0) == 1 ? true : false;
+    bool ret = false;
+    if (mAllmCap && mAllmCap->getValue() == 1) {
+        ret = true;
+    }
+    return ret;
 }
 
 bool DrmConnector::isVrrGroupedMode(const drm_mode_info_t & mode) {
