@@ -77,6 +77,7 @@
 #define DRM_HDMI_PROP_HDMI_USED      "hdmi_used"
 #define DRM_HDMI_PROP_SINK_TYPE      "sink_type"
 #define DRM_HDMI_PROP_ALLM_CAP       "allm_cap"
+#define DRM_HDMI_PROP_DC_CAP         "dc_cap"
 
 /*meson prop*/
 #define DRM_CONNECTOR_PROP_UPDATE "UPDATE"

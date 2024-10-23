@@ -201,19 +201,7 @@ void ModePolicy::getHdmiDcCap(char* dc_cap, int32_t len) {
         return;
     }
 
-    int count = 0;
-    while (true) {
-        sysfs_get_string_original(DISPLAY_HDMI_DEEP_COLOR, dc_cap, len);
-        if (strlen(dc_cap) > 0)
-            break;
-
-        if (count >= 5) {
-            MESON_LOGE("read dc_cap fail\n");
-            break;
-        }
-        count++;
-        usleep(500000);
-    }
+    mConnector->getHdmiDcCap(dc_cap, len);
 }
 
 int ModePolicy::getHdmiSinkType() {

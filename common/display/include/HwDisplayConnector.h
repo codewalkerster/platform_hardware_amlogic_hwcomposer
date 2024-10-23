@@ -104,6 +104,7 @@ public:
     virtual bool supportVrr() {return false;};
     virtual void disableQms(bool /* state */) { };
 
+    virtual void getHdmiDcCap(char* dc_cap __unused, int32_t len __unused) {};
 };
 
 #endif/*HW_DISPLAY_CONNECTOR_H*/

@@ -88,6 +88,7 @@ public:
     std::mutex mMutex;
     bool getHdrType(std::string & hdrType);
     void disableQms(bool state);
+    void getHdmiDcCap(char* dc_cap, int32_t len);
 
 protected:
     int32_t loadConnectorInfo(drmModeConnectorPtr metadata);
@@ -140,6 +141,7 @@ protected:
     std::shared_ptr<DrmProperty> mRxHdrCap;
     std::shared_ptr<DrmProperty> mHdrStaticMeta;
     std::shared_ptr<DrmProperty> mAllmCap;
+    std::shared_ptr<DrmProperty> mDcCap;
 
     /*for lcd now*/
     std::shared_ptr<DrmProperty> mMesonConnectorType;

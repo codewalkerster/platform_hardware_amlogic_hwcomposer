@@ -27,6 +27,7 @@
 #include "Dv.h"
 #include "mode_ubootenv.h"
 
+#define HDMI_DC_CAP_LEN (10)
 #define EDID_MIN_LEN (128)
 #define REFRESH_RATE_30 (30)
 #define HDMI_FRAC_RATE_POLICY "/sys/class/amhdmitx/amhdmitx0/frac_rate_policy"
@@ -51,6 +52,20 @@ static const u8 default_1080p_edid[EDID_MIN_LEN] = {
 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
 0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x46,
 0x48, 0x44, 0x0a, 0x20, 0x20, 0x20, 0x00, 0x05,
+};
+
+// sync with meson_color_attr_type from drivers/drm/meson_hdmi.h
+static const char* HDMI_DC_CAPS[] = {
+    "420,12bit",
+    "420,10bit",
+    "420,8bit",
+    "444,12bit",
+    "444,10bit",
+    "444,8bit",
+    "422,12bit",
+    "rgb,12bit",
+    "rgb,10bit",
+    "rgb,8bit",
 };
 
 /*TODO: re-use legacy hdmi sysfs.*/
@@ -109,6 +124,7 @@ int32_t DrmConnector::loadProperties(drmModeConnectorPtr p __unused) {
         {DRM_HDMI_PROP_HDMI_AV_MUTE, &mAVMute},
         {DRM_HDMI_PROP_DV_CAP, &mDvCaps},
         {DRM_HDMI_PROP_ALLM_CAP, &mAllmCap},
+        {DRM_HDMI_PROP_DC_CAP, &mDcCap},
     };
     const int connectorPropsNum = sizeof(connectorProps)/sizeof(connectorProps[0]);
 
@@ -817,6 +833,34 @@ void DrmConnector::disableQms(bool state)  {
     mDisableQms = state;
     MESON_LOGV("%s mDisable:%d", __func__, mDisableQms);
 };
+
+void DrmConnector::getHdmiDcCap(char* dc_cap, int32_t len ) {
+    if (!dc_cap) {
+        MESON_LOGE("%s dc_cap is NULL\n", __func__);
+        return;
+    }
+
+    if (len < (strlen(HDMI_DC_CAPS[0]) + 2) * HDMI_DC_CAP_LEN ) {
+        MESON_LOGE("dc_cap length is not enough to store all supportted format");
+        return;
+    }
+    if (mDcCap) {
+        int dcCaps = mDcCap->getValue();
+
+        for (int i = 0; i < HDMI_DC_CAP_LEN; i++) {
+            if (dcCaps & (0x1 << i)) {
+               strcat(dc_cap, HDMI_DC_CAPS[i]);
+               strcat(dc_cap, "\n");
+            }
+        }
+
+    } else {
+        strcat(dc_cap, "rgb,8bit\n");
+        MESON_LOGE("mDcCap is null use default format instead %s", __func__);
+    }
+    MESON_LOGD("hdmi get mDcCap %s", dc_cap);
+    return;
+}
 
 int32_t DrmConnector::getHdrPriority(uint32_t & hdrPriority) {
     if (mHdrPriority)
