@@ -33,6 +33,7 @@ enum source_type_t {
 enum buffer_format_t {
     NV21 = 0,
     YUV444 = 1,
+    YUV444_10BIT = 2,
     NV12 = 3,
 };
 
