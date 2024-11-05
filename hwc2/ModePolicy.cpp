@@ -2210,7 +2210,7 @@ bool ModePolicy::applyDisplaySetting(bool force) {
         //4.2 Set amdv_type by scene
         //4.2.1 set dvmode_change to true when dv change at UI switch
         //set avmute-close phy>-set hdr/dv policy>set mode-clear avmute ---enable hdcp
-        if (OUTPUT_MODE_STATE_SWITCH == mState) {
+        if (OUTPUT_MODE_STATE_INIT != mState) {
             dvmode_change = true;
         } else {
             //4.2.2 In other scenarios, set DV directly
