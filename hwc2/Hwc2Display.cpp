@@ -363,7 +363,11 @@ const drm_hdr_capabilities_t * Hwc2Display::getHdrCapabilities() {
     } else {
         mConnector->getHdrCapabilities(&mHdrCaps);
     }
-
+    // todo: after google combined current mode and support HDR type, remove the workround
+    if (strstr(mDisplayMode.name, "7680x4320") || strstr(mDisplayMode.name, "i")) {
+        mHdrCaps.DolbyVisionSupported = false;
+        mHdrCaps.DOLBY_VISION_4K30_Supported = false;
+    }
     return &mHdrCaps;
 }
 
