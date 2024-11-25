@@ -232,7 +232,8 @@ int32_t ConnectorPanel::parseHdrCapabilities() {
     mHdrCapabilities.DolbyVisionSupported = getDvSupportStatus();
     mHdrCapabilities.HLGSupported = true;
     mHdrCapabilities.HDR10Supported = true;
-    mHdrCapabilities.HDR10PlusSupported = sys_get_bool_prop("ro.vendor.hdr10plus.enable", false);
+    mHdrCapabilities.HDR10PlusSupported =
+            sysfs_get_int("/sys/class/amvecm/enable_hdr10plus", 0) == 1 ? true : false;
     mHdrCapabilities.maxLuminance = sDefaultMaxLumiance;
     mHdrCapabilities.avgLuminance = sDefaultMaxLumiance;
     mHdrCapabilities.minLuminance = sDefaultMinLumiance;
