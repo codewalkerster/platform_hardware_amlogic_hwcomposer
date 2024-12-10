@@ -62,10 +62,12 @@ public:
     meson_fb_processor_t getFbProcessorType() {return FB_DI_PROCESSOR;};
     void threadProcess();
     static void * threadMain(void * data);
+    int32_t getUnusedBufNum();
     pthread_t mThread;
     bool mExitThread;
     bool mInited;
     bool mNeed_fence;
+    bool staticFrameMode;
     int PropGetInt(const char* str, int def);
     int di_check_D();
     int reset();

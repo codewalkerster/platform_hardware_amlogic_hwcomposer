@@ -235,8 +235,9 @@ int32_t DiProcessor::asyncProcess(
     int output_fd = -1;
     struct frame_info_t frame_info;
     int ret;
-    int i;
+    int buf_num = -1;
     int disp_q_size;
+    bool frame_need_drop = false;
 
     log_level = PropGetInt("vendor.hwc.di_log", 0);
 
@@ -267,6 +268,10 @@ int32_t DiProcessor::asyncProcess(
         reset();
         mAsyncCount++;
         ret = ioctl(mHandler, DI_PROCESS_IOCTL_SET_FRAME, &frame_info);
+    } else if (ret== 3) {
+        ALOGD("di_buf_mgr changed.\n");
+        frame_need_drop = true;
+        ret = 0;
     }
     if (ret != 0) {
         ALOGE("set frame err: ret =%d", ret);
@@ -290,13 +295,38 @@ int32_t DiProcessor::asyncProcess(
         if (frame_info.is_i) {
             if (mLastFrameIsI) {
                 mFirstI = false;
-                outfb->setDiProcessorFd(mLastFd);
-                output_fd = mLastFd;
-                processFence = mLastFenceFd;
-                ALOGD_IF(di_check_D(), "%s: repeat 0; I->I: outfd=%d, outfencefd=%d",
-                    __FUNCTION__, mLastFd, processFence);
-                mLastFd = frame_info.out_fd;
-                mLastFenceFd = frame_info.out_fence_fd;
+                if (frame_need_drop) {
+                    ALOGD("black frame to I: queue last I to di driver.\n");
+                    buf_num = getUnusedBufNum();
+                    mDi_Out[buf_num].fd = mLastFd;
+                    mDi_Out[buf_num].used = true;
+                    mDi_Out[buf_num].is_i = true;
+                    mDi_Out[buf_num].fence = mLastFenceFd;
+                    mDi_Out[buf_num].status = DI_OUT_FENCE;
+                    {
+                        std::lock_guard<std::mutex> lock(mMutex);
+                        mBuf_index_q.push(buf_num);
+                    }
+
+                    staticFrameMode = true;
+                    mNeed_fence = false;
+                    outfb->setDiProcessorFd(-2);
+                    output_fd = -2;
+                    processFence = -1;
+                    mLastFd = frame_info.out_fd;
+                    mLastFenceFd = frame_info.out_fence_fd;
+                    mLastFrameIsI = frame_info.is_i;
+                    return 0;
+                } else {
+                    staticFrameMode  = false;
+                    outfb->setDiProcessorFd(mLastFd);
+                    output_fd = mLastFd;
+                    processFence = mLastFenceFd;
+                    ALOGD_IF(di_check_D(), "%s: repeat 0; I->I: outfd=%d, outfencefd=%d",
+                        __FUNCTION__, mLastFd, processFence);
+                    mLastFd = frame_info.out_fd;
+                    mLastFenceFd = frame_info.out_fence_fd;
+                }
             } else {
                 mLastFrameIsI = frame_info.is_i;
                 mFirstI = true;
@@ -305,24 +335,15 @@ int32_t DiProcessor::asyncProcess(
             }
         } else {
             if (mLastFrameIsI) {
-                while (1) {
-                    for (i = 0; i < DI_OUT_BUF_COUNT; i++) {
-                        if (mDi_Out[i].used == false)
-                            break;
-                    }
-                    if (i < DI_OUT_BUF_COUNT) {
-                        break;
-                    } else
-                        usleep(2*1000);
-                }
-                mDi_Out[i].fd = mLastFd;
-                mDi_Out[i].used = true;
-                mDi_Out[i].is_i = true;
-                mDi_Out[i].fence = mLastFenceFd;
-                mDi_Out[i].status = DI_OUT_FENCE;
+                buf_num = getUnusedBufNum();
+                mDi_Out[buf_num].fd = mLastFd;
+                mDi_Out[buf_num].used = true;
+                mDi_Out[buf_num].is_i = true;
+                mDi_Out[buf_num].fence = mLastFenceFd;
+                mDi_Out[buf_num].status = DI_OUT_FENCE;
                 {
                     std::lock_guard<std::mutex> lock(mMutex);
-                    mBuf_index_q.push(i);
+                    mBuf_index_q.push(buf_num);
                 }
 
                 ALOGD("I to P:  push the last I to list for recycle");
@@ -364,9 +385,15 @@ int32_t DiProcessor::asyncProcess(
                     frame_info.need_bypass, frame_info.is_tvp, mFirstI);
                 return 0;
             } else {
-                output_fd = dup(mDi_Out[mBuf_index].fd);
-                outfb->setDiProcessorFd(output_fd);
-                processFence = dup(mLastFenceOutFd);
+                if (staticFrameMode) {
+                    outfb->setDiProcessorFd(-2);
+                    output_fd = -2;
+                    processFence = -1;
+                }  else {
+                    output_fd = dup(mDi_Out[mBuf_index].fd);
+                    outfb->setDiProcessorFd(output_fd);
+                    processFence = dup(mLastFenceOutFd);
+                }
                 if (frame_info.out_fd >= 0) {
                     close(frame_info.out_fd);
                 }
@@ -378,24 +405,15 @@ int32_t DiProcessor::asyncProcess(
         } else {
             if (mLastFrameIsI) {
                 ALOGD("I->P:last I frame not sent to vc, but need wait fence to recycle di buffer");
-                while (1) {
-                    for (i = 0; i < DI_OUT_BUF_COUNT; i++) {
-                        if (mDi_Out[i].used == false)
-                            break;
-                    }
-                    if (i < DI_OUT_BUF_COUNT) {
-                        break;
-                    } else
-                        usleep(2*1000);
-                }
-                mDi_Out[i].fd = mLastFd;
-                mDi_Out[i].used = true;
-                mDi_Out[i].is_i = frame_info.is_i;
-                mDi_Out[i].fence = mLastFenceFd;
-                mDi_Out[i].status = DI_OUT_FENCE;
+                buf_num = getUnusedBufNum();
+                mDi_Out[buf_num].fd = mLastFd;
+                mDi_Out[buf_num].used = true;
+                mDi_Out[buf_num].is_i = frame_info.is_i;
+                mDi_Out[buf_num].fence = mLastFenceFd;
+                mDi_Out[buf_num].status = DI_OUT_FENCE;
                 {
                     std::lock_guard<std::mutex> lock(mMutex);
-                    mBuf_index_q.push(i);
+                    mBuf_index_q.push(buf_num);
                 }
 
             } else {
@@ -439,28 +457,19 @@ int32_t DiProcessor::asyncProcess(
 
     mLastFrameIsI = frame_info.is_i;
 
-    while (1) {
-        for (i = 0; i < DI_OUT_BUF_COUNT; i++) {
-            if (mDi_Out[i].used == false)
-                break;
-        }
-        if (i < DI_OUT_BUF_COUNT) {
-            break;
-        } else
-            usleep(2*1000);
-    }
-    mDi_Out[i].fd = dup(output_fd);
-    mDi_Out[i].status = DI_OUT_FD;
-    mDi_Out[i].used = true;
-    mDi_Out[i].is_i = frame_info.is_i;
+    buf_num = getUnusedBufNum();
+    mDi_Out[buf_num].fd = dup(output_fd);
+    mDi_Out[buf_num].status = DI_OUT_FD;
+    mDi_Out[buf_num].used = true;
+    mDi_Out[buf_num].is_i = frame_info.is_i;
     mBuf_index_Last = mBuf_index;
-    mBuf_index = i;
+    mBuf_index = buf_num;
     {
         std::lock_guard<std::mutex> lock(mMutex);
         disp_q_size = mBuf_index_q.size();
     }
     ALOGD_IF(di_check_D(), "%s: mDi_Out[i].fd=%d, i=%d, is_i=%d, disp_q_size=%d",
-        __FUNCTION__, mDi_Out[i].fd, i, mDi_Out[i].is_i, disp_q_size);
+        __FUNCTION__, mDi_Out[buf_num].fd, buf_num, mDi_Out[buf_num].is_i, disp_q_size);
 
     return 0;
 
@@ -623,3 +632,19 @@ void * DiProcessor::threadMain(void * data) {
     return NULL;
 }
 
+int32_t DiProcessor::getUnusedBufNum() {
+        int i = 0;
+
+        while (1) {
+            for (i = 0; i < DI_OUT_BUF_COUNT; i++) {
+                if (mDi_Out[i].used == false)
+                    break;
+            }
+            if (i < DI_OUT_BUF_COUNT)
+                break;
+            else
+                usleep(2*1000);
+        }
+
+        return i;
+}
