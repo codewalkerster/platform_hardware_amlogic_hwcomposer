@@ -91,6 +91,8 @@ int32_t VideoComposerDev::setFrames(
         if (fbType == DRM_FB_VIDEO_UVM_DMA ) {
             if (am_gralloc_get_format(buf) == HAL_PIXEL_FORMAT_YCBCR_444_888) {
                 vFrameInfo->bufferFormat = YUV444;
+            } else if (am_gralloc_get_format(buf) == HAL_PIXEL_FORMAT_YCBCR_420_888) {
+                vFrameInfo->bufferFormat = NV12;
             } else {
                 vFrameInfo->bufferFormat = NV21;
             }

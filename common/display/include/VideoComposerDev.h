@@ -33,6 +33,7 @@ enum source_type_t {
 enum buffer_format_t {
     NV21 = 0,
     YUV444 = 1,
+    NV12 = 3,
 };
 
 typedef struct video_frame_info {
