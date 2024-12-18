@@ -2227,6 +2227,8 @@ hwc2_error_t Hwc2Display::setHdrConversionStrategy(bool passThrough, uint32_t nu
                 ret = mModePolicy->setHdrConversionPolicy(passThrough, outHdrConversionType);
                 if (ret == 0) {
                     mStateCondition.wait_for(stateLock, std::chrono::seconds(1));
+                    if (containHLGType && isAuto)
+                        *preferredHdrOutputType = static_cast<int32_t>(HAL_HDR_HLG);
                 }
                 mModeMgr->resetTags(true);
             } else {
