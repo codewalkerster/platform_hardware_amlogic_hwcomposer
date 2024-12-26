@@ -614,7 +614,8 @@ void Hwc2Display::onModeChanged(int stage) {
                 }
 
                 /*update mode success.*/
-                if (mModeMgr->getDisplayMode(mDisplayMode) == 0) {
+                if (mModeMgr->getDisplayMode(mDisplayMode) == 0
+                        && strcmp(mDisplayMode.name, "dummy_l")) {
                     MESON_LOGD("Hwc2Display::onModeChanged getDisplayMode [%s]", mDisplayMode.name);
                     mPowerMode->setConnectorStatus(true);
                     mSkipComposition = false;
