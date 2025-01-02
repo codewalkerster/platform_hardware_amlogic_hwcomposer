@@ -1566,13 +1566,13 @@ hwc2_error_t Hwc2Display::presentDisplay(int32_t* outPresentFence) {
     }
     mValidateDisplay = false;
 
+    if (mPresentFence >= 0)
+        close(mPresentFence);
+    mPresentFence = -1;
+
     if (mSkipComposition) {
         *outPresentFence = -1;
     } else {
-        if (mPresentFence >= 0)
-            close(mPresentFence);
-        mPresentFence = -1;
-
         /*1.client target is always full screen, just post to crtc display axis.
          *2.client target may not update while display frame need changed.
          * When app not updated, sf won't update client target, but hwc
@@ -1692,7 +1692,7 @@ hwc2_error_t Hwc2Display::getReleaseFences(uint32_t* outNumElements,
             if (needInfo) {
                 int32_t releaseFence = layer->getPrevReleaseFence();
                 if (releaseFence == -1)
-                    *outFences = ::dup(mPresentFence);
+                    *outFences = (mPresentFence >= 0 ? ::dup(mPresentFence) : -1);
                 else
                     *outFences = releaseFence;
                 *outLayers = layer->getUniqueId();

@@ -73,7 +73,7 @@ bool HwcPowerMode::needBlankScreen(bool bLayerPresent) {
         case MESON_POWER_BOOT:
             return !(mConnectorPresent && bLayerPresent);
         case MESON_POWER_CONNECTOR_IN:
-            return false || !powerOn;
+            return !powerOn || !bLayerPresent;
         case MESON_POWER_CONNECTOR_OUT:
             return true;
         default:

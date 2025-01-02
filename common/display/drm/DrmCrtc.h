@@ -112,6 +112,7 @@ protected:
 
     /* vrr enable */
     bool mEnableVrr = true;
+    int32_t mLastPresentFence = -1;
 };
 
 #endif/*DRM_CRTC_H*/

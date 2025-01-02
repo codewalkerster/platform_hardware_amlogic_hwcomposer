@@ -482,10 +482,14 @@ int32_t DrmCrtc::pageFlip(int32_t & out_fence) {
         presentFence.crtc_idx = mPipe;
         auto ret = ioctl(mDrmFd, DRM_IOCTL_MESON_CREAT_PRESENT_FENCE, &presentFence);
         if (ret) {
-            MESON_LOGE("Crtc ioctl get presentFence failed ret=%d", ret);
-            out_fence = -1;
+            MESON_LOGV("Crtc reuse presentFence");
+            out_fence  = (mLastPresentFence >= 0 ? dup(mLastPresentFence) : -1);
         } else {
             out_fence = presentFence.fd;
+            if (mLastPresentFence >= 0) {
+                close(mLastPresentFence);
+            }
+            mLastPresentFence = (out_fence >= 0 ? dup(out_fence) : -1);
         }
         return 0;
     }
@@ -508,6 +512,11 @@ int32_t DrmCrtc::pageFlip(int32_t & out_fence) {
         MESON_LOGE("pageFlip-%d:atomic commit ret (%d)", getId(), ret);
     }
     ATRACE_END();
+
+    if (mLastPresentFence >= 0) {
+        close(mLastPresentFence);
+    }
+    mLastPresentFence = (out_fence >= 0 ? dup(out_fence) : -1);
 
     drmModeAtomicFree(mReq);
     mReq = NULL;
