@@ -2283,7 +2283,7 @@ bool ModePolicy::applyDisplaySetting(bool force) {
                 hdr_priority_change, connectorReady,
                 modeChange, frac_rate_policy_change);
 
-        if (!attr_change && !hdr_policy_change && !hdr_priority_change && connectorReady) {
+        if (!dv_change && !attr_change && !hdr_policy_change && !hdr_priority_change && connectorReady) {
             if ((!modeChange && frac_rate_policy_change) ||
                     (modeChange && isSameGroup(curDisplayMode, final_displaymode))) {
                     MESON_LOGD("support qms and initialized, let framework handle it");
