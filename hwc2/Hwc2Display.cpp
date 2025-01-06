@@ -618,7 +618,6 @@ void Hwc2Display::onModeChanged(int stage) {
                     MESON_LOGD("Hwc2Display::onModeChanged getDisplayMode [%s]", mDisplayMode.name);
                     mPowerMode->setConnectorStatus(true);
                     mSkipComposition = false;
-                    getActiveConfigWidthAndHeight();
                     mOutsideChanged = true;
                     bSendPlugIn = true;
                     if (mSignalHpd) {
@@ -645,6 +644,7 @@ void Hwc2Display::onModeChanged(int stage) {
         }
     }
 
+    getActiveConfigWidthAndHeight();
     /*call hotplug out of lock, SF may call some hwc function to cause deadlock.*/
     if (bSendPlugIn && (mModeMgr->needCallHotPlug() || hdrCapsChanged)) {
         MESON_LOGD("onModeChanged mObserver->onHotplug(true) hdrCapsChanged:%d", hdrCapsChanged);
