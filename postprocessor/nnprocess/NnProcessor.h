@@ -37,6 +37,7 @@ struct sr_buffer_t {
     int shared_fd;
     int status;
     buffer_handle_t buffer_handle;
+    int input_fence_fd;
 };
 
 enum nn_status_e {
@@ -174,6 +175,7 @@ public:
     static int64_t mTotalCloseCount;
     int mVInfo_width;
     int mVInfo_height;
+    int mDiBackendEn;
 };
 
 #endif

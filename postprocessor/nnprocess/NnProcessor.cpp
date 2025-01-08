@@ -183,6 +183,7 @@ NnProcessor::NnProcessor() {
     mAllocThread = 0;
     mThread = 0;
     mNnDoing = false;
+    mDiBackendEn = false;
     ALOGD("NnProcessor: end");
 }
 
@@ -302,8 +303,10 @@ int32_t NnProcessor::asyncProcess(
     int crop_right;
     int crop_bottom;
     drm_fb_type_t type;
+    int input_fence_fd = -1;
 
     log_level = PropGetInt("vendor.hwc.nn_log", 0);
+    mDiBackendEn = PropGetInt("vendor.di_backend.enable", 0);
 
     mNeed_fence = false;
     processFence = -1;
@@ -326,6 +329,8 @@ int32_t NnProcessor::asyncProcess(
         goto bypass;
     }
 
+    input_fence_fd = inputfb->getDiProcessorFence();
+    ALOGD_IF(nn_check_D(), "%s: input_fd=%d, fence fd:%d.", __FUNCTION__, input_fd, input_fence_fd);
     if (!inputfb->mIsSidebandBuffer) {
         w = am_gralloc_get_width(inputfb->mBufferHandle);
         h = am_gralloc_get_height(inputfb->mBufferHandle);
@@ -345,6 +350,11 @@ int32_t NnProcessor::asyncProcess(
 
     if (crop_right > 1920 || crop_bottom > 1080)
         goto bypass;
+
+    if (mDiBackendEn && input_fence_fd < 0) {
+            ALOGD_IF(nn_check_D(), "not do DI, bypass aisr.\n");
+            goto bypass;
+    }
 
     if (mVInfo_width != 3840 && mVInfo_width != 7680 && mVInfo_width != 0) {
         ALOGD_IF(nn_check_D(), "vinfo %d %d not support", mVInfo_width, mVInfo_height);
@@ -367,39 +377,40 @@ int32_t NnProcessor::asyncProcess(
     ai_sr_info->shared_fd = input_fd;
     ai_sr_info->get_info_type = GET_HF_INFO;
 
-    ret = ioctl(mUvmHandler, UVM_IOC_GET_INFO, &hook_data);
-    if (ret < 0) {
-        ALOGD("%s: UVM_IOC_GET_INFO failed.", __FUNCTION__);
-    } else {
-        ALOGD_IF(nn_check_D(),
-            "asyncProcess_1: get_info: nn_status=%d, hf_phy_addr=%" PRId64", %d*%d",
-            ai_sr_info->nn_status,
-            ai_sr_info->hf_phy_addr,
-            ai_sr_info->hf_width,
-            ai_sr_info->hf_height);
-        if (ai_sr_info->nn_status == NN_WAIT_DOING
-            || ai_sr_info->nn_status == NN_START_DOING
-            || ai_sr_info->nn_status == NN_DONE) {
-            ALOGD_IF(nn_check_D(),
-                "nn not need do again, nn_index=%d",
-                ai_sr_info->nn_index);
-            goto bypass;
-        }
-        ALOGD_IF(nn_check_D(),
-            "asyncProcess_2: get_info: nn_status=%d, hf_phy_addr=%" PRId64", %d*%d",
-            ai_sr_info->nn_status,
-            ai_sr_info->hf_phy_addr,
-            ai_sr_info->hf_width,
-            ai_sr_info->hf_height);
+    if (!mDiBackendEn) {
+            ret = ioctl(mUvmHandler, UVM_IOC_GET_INFO, &hook_data);
+            if (ret < 0) {
+                ALOGD("%s: UVM_IOC_GET_INFO failed.", __FUNCTION__);
+            } else {
+                ALOGD_IF(nn_check_D(),
+                    "asyncProcess_1: get_info: nn_status=%d, hf_phy_addr=%" PRId64", %d*%d",
+                    ai_sr_info->nn_status,
+                    ai_sr_info->hf_phy_addr,
+                    ai_sr_info->hf_width,
+                    ai_sr_info->hf_height);
+                if (ai_sr_info->nn_status == NN_WAIT_DOING
+                    || ai_sr_info->nn_status == NN_START_DOING
+                    || ai_sr_info->nn_status == NN_DONE) {
+                    ALOGD_IF(nn_check_D(),
+                        "nn not need do again, nn_index=%d",
+                        ai_sr_info->nn_index);
+                    goto bypass;
+                }
+                ALOGD_IF(nn_check_D(),
+                    "asyncProcess_2: get_info: nn_status=%d, hf_phy_addr=%" PRId64", %d*%d",
+                    ai_sr_info->nn_status,
+                    ai_sr_info->hf_phy_addr,
+                    ai_sr_info->hf_width,
+                    ai_sr_info->hf_height);
 
-        if (ai_sr_info->hf_phy_addr == 0 ||
-            ai_sr_info->hf_width == 0 ||
-            ai_sr_info->hf_height == 0) {
-            ALOGD_IF(nn_check_D(), "%s: vf no hf", __FUNCTION__);
-            goto bypass;
-        }
+                if (ai_sr_info->hf_phy_addr == 0 ||
+                    ai_sr_info->hf_width == 0 ||
+                    ai_sr_info->hf_height == 0) {
+                    ALOGD_IF(nn_check_D(), "%s: vf no hf", __FUNCTION__);
+                    goto bypass;
+                }
+            }
     }
-
     ai_sr_info->need_do_aisr = 0;
     ai_sr_info->fence_fd = fence_fd;
     ai_sr_info->nn_out_fd = -1;
@@ -416,11 +427,13 @@ int32_t NnProcessor::asyncProcess(
         goto error;
     }
 
-    if (ai_sr_info->hf_phy_addr == 0 ||
-        ai_sr_info->hf_width == 0 ||
-        ai_sr_info->hf_height == 0) {
-        ALOGD_IF(nn_check_D(), "%s: vf no hf", __FUNCTION__);
-        goto error;
+    if (!mDiBackendEn) {
+            if (ai_sr_info->hf_phy_addr == 0 ||
+                ai_sr_info->hf_width == 0 ||
+                ai_sr_info->hf_height == 0) {
+                ALOGD_IF(nn_check_D(), "%s: vf no hf", __FUNCTION__);
+                goto error;
+            }
     }
 
     if ((mVInfo_width == 0) || (mVInfo_height == 0)) {
@@ -482,6 +495,7 @@ int32_t NnProcessor::asyncProcess(
     mSrBuf[mBuf_index].fence_fd = -1;
     mSrBuf[mBuf_index].status = BUF_NN_START;
     mSrBuf[mBuf_index].shared_fd = dup_fd;
+    mSrBuf[mBuf_index].input_fence_fd = input_fence_fd;
 
     ALOGD_IF(nn_check_D(),
         "%s: dup_fd =%d, buf_index=%d",
@@ -518,6 +532,8 @@ error:
     }
 
 bypass:
+    if (input_fence_fd >= 0)
+        close(input_fence_fd);
     ALOGD_IF(nn_check_D(), "NN_BYPASS");
     return 0;
 }
@@ -601,6 +617,10 @@ int32_t NnProcessor::teardown() {
             mCloseCount++;
             mTotalCloseCount++;
         }
+
+        if (sr_buf->input_fence_fd != -1)
+                close(sr_buf->input_fence_fd);
+
         mBuf_index_q.pop();
         ALOGD("%s: close fd =%d, buf_index=%d\n", __FUNCTION__, shared_fd, buf_index);
     }
@@ -642,6 +662,7 @@ void NnProcessor::threadProcess() {
     uint64_t mTime_1;
     uint64_t mTime_2;
     uint64_t nn_time;
+    int input_fence_fd = -1;;
 
     size = mBuf_index_q.size();
     if (size == 0) {
@@ -664,6 +685,28 @@ void NnProcessor::threadProcess() {
 
     sr_buf = &mSrBuf[buf_index];
     shared_fd = sr_buf->shared_fd;
+    input_fence_fd = sr_buf->input_fence_fd;
+
+    if (mDiBackendEn) {
+            sp<Fence> di_fence = new Fence(input_fence_fd);
+            clock_gettime(CLOCK_MONOTONIC, &tm_1);
+            status_t res = di_fence->wait(FENCE_TIMEOUT_MS);
+            if (res != OK) {
+                ALOGE("wait di fence timeout");
+            }
+            clock_gettime(CLOCK_MONOTONIC, &tm_2);
+
+            mTime_1 = tm_1.tv_sec * 1000000LL + tm_1.tv_nsec / 1000;
+            mTime_2 = tm_2.tv_sec * 1000000LL + tm_2.tv_nsec / 1000;
+            nn_time = mTime_2 - mTime_1;
+            mFence_wait_count += 1;
+            ALOGD_IF(nn_check_D(), "di fence: wait %" PRId64"ms, fence_fd=%d",
+                nn_time / 1000, input_fence_fd);
+            if (nn_time > 8000)
+                ALOGE("di fence: wait too long %" PRId64"", nn_time);
+            sr_buf->input_fence_fd = -1;
+    }
+
     if (sr_buf->fence_fd_last >= 0) {
         sp<Fence> fence = new Fence(sr_buf->fence_fd_last);
         clock_gettime(CLOCK_MONOTONIC, &tm_1);
