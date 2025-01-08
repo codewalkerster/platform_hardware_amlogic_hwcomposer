@@ -483,7 +483,7 @@ void VideoProcessorsManager::setProcessors(
     std::vector<std::shared_ptr<FbProcessor>> vProcessors;
 
     std::vector<std::vector<std::shared_ptr<FbProcessor>>> allProcessors = {
-        mSrProcessors, mPqProcessors, mColorProcessors, mDiProcessors,
+        mPqProcessors, mColorProcessors, mDiProcessors, mSrProcessors,
     };
 
     // remove processor for destroy layer
