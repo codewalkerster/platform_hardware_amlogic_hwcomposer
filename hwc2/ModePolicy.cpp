@@ -63,6 +63,21 @@ static const char* CONTENT_TYPE_CAP[] = {
     "game",
 };
 
+//same resolution both have full name and short name need to be added here
+static const char* FULLNAME_LIST[] = {
+    "1280x720p",
+    "1920x1080p",
+    "3840x2160p",
+};
+
+inline bool needConvertName(char* modeName) {
+    for (int i = 0; i < ARRAY_SIZE(FULLNAME_LIST); i++) {
+        if (strstr(modeName, FULLNAME_LIST[i])) {
+            return true;
+        }
+    }
+    return false;
+}
 /*****************************************/
 /*  deepcolor */
 
@@ -1186,6 +1201,10 @@ void ModePolicy::getPosition(const char* curMode, int *position) {
                         strlcpy(keyValue, MODE_PANEL, sizeof(keyValue));
                     } else if (strchr(curMode,'p')) {
                         strncpy(keyValue, curMode, strchr(curMode,'p') - curMode + 1);
+                        const char* pos = strchr(keyValue, 'x');
+                        if (pos != nullptr && needConvertName(keyValue)) {
+                            strlcpy(keyValue, pos + 1, sizeof(keyValue));
+                        }
                     } else if (strchr(curMode,'i')){
                         strncpy(keyValue, curMode, strchr(curMode,'i') - curMode + 1);
                     }
@@ -1254,6 +1273,10 @@ void ModePolicy::setPosition(const char* curMode, int left, int top, int width, 
                         strlcpy(keyValue, MODE_PANEL, sizeof(keyValue));
                     } else if (strchr(curMode,'p')) {
                         strncpy(keyValue, curMode, strchr(curMode,'p') - curMode + 1);
+                        const char* pos = strchr(keyValue, 'x');
+                        if (pos != nullptr && needConvertName(keyValue)) {
+                            strlcpy(keyValue, pos + 1, sizeof(keyValue));
+                        }
                     } else if (strchr(curMode,'i')){
                         strncpy(keyValue, curMode, strchr(curMode,'i') - curMode + 1);
                     }
