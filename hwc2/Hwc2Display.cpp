@@ -1956,7 +1956,7 @@ hwc2_error_t Hwc2Display::setActiveConfigWithConstraints(hwc2_config_t config,
 
     int64_t desiredTimeNanos = vsyncPeriodChangeConstraints->desiredTimeNanos;
 
-    outTimeline->refreshRequired = false;
+    outTimeline->refreshRequired = true;
     hwc2_config_t activeConfig;
     if (mModeMgr->getActiveConfig(&activeConfig) != HWC2_ERROR_NONE)
         return HWC2_ERROR_BAD_CONFIG;
