@@ -468,6 +468,30 @@ bool DisplayAdapterRemote::getQmsVrrCap() {
     return false;
 }
 
+bool DisplayAdapterRemote::getVideoPosition(uint32_t displaId, int& left, int& top, int& right, int& bottom) {
+    Json::Value cmd, ret;
+    IF_SERVER_NOT_READY_RETURN(false);
+    cmd["cmd"] = "getVideoPosition";
+    cmd["displayId"] = displaId;
+    ipc->send_request_wait_reply(cmd, ret);
+    if (ret.isMember("ret") && ret["ret"].isMember("left") &&
+        ret["ret"].isMember("top") && ret["ret"].isMember("right") &&
+        ret["ret"].isMember("bottom")) {
+        Json::Value& value = ret["ret"]["left"];
+        left = value.asUInt();
+        value = ret["ret"]["top"];
+        top = value.asUInt();
+        value = ret["ret"]["right"];
+        right = value.asUInt();
+        value = ret["ret"]["bottom"];
+        bottom = value.asUInt();
+        return true;
+    } else {
+        MESON_LOGE("Get Wrong Video Position");
+        return false;
+    }
+}
+
 std::unique_ptr<DisplayAdapter> DisplayAdapterRemote::create() {
     return static_cast<std::unique_ptr<DisplayAdapter>>(std::make_unique<DisplayAdapterRemote>());
 }

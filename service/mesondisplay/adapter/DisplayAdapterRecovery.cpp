@@ -563,6 +563,11 @@ std::shared_ptr<DisplayAdapter> DisplayAdapterLocal::create(DisplayAdapter::Back
     }
 }
 
+bool DisplayAdapterLocal::getVideoPosition(uint32_t /*displaId*/, int& /*left*/, int& /*top*/, int& /*right*/, int& /*bottom*/) {
+    NOTIMPLEMENTED;
+    return false;
+}
+
 std::shared_ptr<DisplayAdapter> DisplayAdapterCreateLocal(DisplayAdapter::BackendType type) {
     return DisplayAdapterLocal::create(type);
 }

@@ -76,6 +76,7 @@ static void print_usage(const char* name) {
             "                                    \"getWhiteBoardMode\" \n"
             "                                    \"isHdmiUsed\" \n"
             "                                    \"getHdrSdrRatio\" \n"
+            "                                    \"getVideoPosition\" [display id] \n"
             "                              \teg: \"setDisplayConnector\" [connector type] TYPE could be like:\n"
             "                              \t    DUMMY\n"
             "                              \t    CVBS\n"
@@ -214,6 +215,10 @@ int main(int argc, char* argv[]) {
                     float ratio;
                     client->getHdrSdrRatio(ratio, type);
                     printf("getHdrSdrRatio %f \n", ratio);
+                } else if (memcmp("getVideoPosition", optarg, sizeof("getVideoPosition")) == 0) {
+                    int left,top,right,bottom;
+                    client->getVideoPosition(std::stoi(argv[optind]), left, top, right, bottom);
+                    printf("display id %d video position [%d %d %d %d]\n", std::stoi(argv[optind]), left, top, right, bottom);
                 } else if (memcmp("getQmsVrrCap", optarg, sizeof("getQmsVrrCap")) == 0) {
                     bool qms = client->getQmsVrrCap();
                     printf("Qms Vrr Cap :%d\n", qms);

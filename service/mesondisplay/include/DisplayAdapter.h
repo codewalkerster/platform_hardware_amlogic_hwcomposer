@@ -218,6 +218,7 @@ public:
     virtual bool disableSidebandStream(bool isDisable) = 0;
     virtual bool setKeystoneCorrection(const string& params) = 0;
     virtual bool setReverseMode(int type) = 0;
+    virtual bool getVideoPosition(uint32_t displaId, int& left, int& top, int& right, int& bottom) = 0;
     virtual bool disableQms(bool isDisable) = 0;
     virtual bool getQmsVrrCap() = 0;
 

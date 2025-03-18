@@ -102,6 +102,7 @@ public:
     bool setDvMode(const string& dv_mode, ConnectorType displayType) override;
     bool setKeystoneCorrection(const string& params) override;
     bool setReverseMode(int type) override;
+    bool getVideoPosition(uint32_t displaId, int& left, int& top, int& right, int& bottom) override;
     bool disableQms(bool isDisable) override;
     bool getQmsVrrCap() override;
 

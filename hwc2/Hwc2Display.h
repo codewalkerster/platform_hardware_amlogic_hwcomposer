@@ -237,6 +237,7 @@ public:
     int32_t setModePolicy(std::shared_ptr<IModePolicy> policy);
     void setKeystoneCorrection(std::string params);
     void setReverseMode(int type);
+    bool getVideoPosition(drm_rect_t& rect);
 
 protected:
     /* For compose. */
@@ -370,6 +371,7 @@ protected:
     int32_t mBootConfig = -1;
     // for mode  policy
     std::shared_ptr<IModePolicy> mModePolicy;
+    drm_rect_t mMaxVideoRect;
     // for allm
     bool mIsDisablePostProcessor = false;
     bool mNeedChangeModelist = false;

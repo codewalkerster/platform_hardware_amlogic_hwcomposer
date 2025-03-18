@@ -1353,6 +1353,7 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
     int maxRegion = 0, region = 0;
     ISystemControl::Rect maxRect{0, 0, 0, 0};
 
+    drm_rect_t bMaxVideoRect{0,0,0,0};
     bool hasDecoration = false;
     bool hasClientLayer = false;
     /*collect display requested, and changed composition type.*/
@@ -1399,10 +1400,12 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
                 maxRect.right  = dispFrame.right;
                 maxRect.top    = dispFrame.top;
                 maxRect.bottom = dispFrame.bottom;
+                bMaxVideoRect = layer->mBackupDisplayFrame;
             }
         }
     }
 
+    mMaxVideoRect = bMaxVideoRect;
     // for self-adaptive
     if (maxRegion != 0 && mVideoLayerRegion != maxRegion) {
         sc_frame_rate_display(true, maxRect);
@@ -2955,5 +2958,10 @@ void Hwc2Display::setReverseMode(int type) {
     }
     mObserver->refresh();
     return;
+}
+
+bool Hwc2Display::getVideoPosition(drm_rect_t& rect) {
+    rect = mMaxVideoRect;
+    return true;
 }
 

@@ -316,6 +316,18 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
         if (!in.isMember("params"))
             goto OUT;
         mAdapter->setKeystoneCorrection(in["params"].asString());
+    } else if (cmd == "getVideoPosition") {
+        if (!in.isMember("displayId")) {
+            out["ret"] = ret;
+            return;
+        }
+
+        int left,top,right,bottom;
+        mAdapter->getVideoPosition(in["displayId"].asUInt(), left, top, right, bottom);
+        ret["left"] = left;
+        ret["top"] = top;
+        ret["right"] = right;
+        ret["bottom"] = bottom;
     } else if (cmd == "setReverseMode") {
         if (!in.isMember("value"))
             goto OUT;

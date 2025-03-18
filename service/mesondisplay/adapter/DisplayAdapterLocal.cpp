@@ -753,6 +753,16 @@ bool DisplayAdapterLocal::setReverseMode(int type) {
     return MesonHwc2::getInstance().setReverseMode(type);
 }
 
+bool DisplayAdapterLocal::getVideoPosition(uint32_t displaId, int& left, int& top, int& right, int& bottom) {
+    drm_rect_t videoRect;
+    MesonHwc2::getInstance().getVideoPosition(displaId, videoRect);
+    left = videoRect.left;
+    top = videoRect.top;
+    right = videoRect.right;
+    bottom = videoRect.bottom;
+    return true;
+}
+
 std::shared_ptr<DisplayAdapter> DisplayAdapterLocal::create(DisplayAdapter::BackendType type) {
     switch (type) {
         case BackendType::DISPLAY_TYPE_DRM:

@@ -1300,6 +1300,11 @@ bool MesonHwc2::setReverseMode(int type) {
     return true;
 }
 
+bool MesonHwc2::getVideoPosition(uint32_t displayId, drm_rect_t& rect) {
+    GET_HWC_DISPLAY(displayId);
+    return hwcDisplay->getVideoPosition(rect);
+}
+
 bool MesonHwc2::getConnectorType(uint32_t displayId, drm_connector_type_t & connectorType) {
     if (displayId < 0|| displayId > HwcConfig::getDisplayNum()) {
         return false;
@@ -1341,3 +1346,4 @@ bool MesonHwc2::setFixedConnectorDisplay(drm_connector_type_t connectorType) {
     }
     return true;
 }
+

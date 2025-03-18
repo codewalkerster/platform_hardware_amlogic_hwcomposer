@@ -195,6 +195,7 @@ public:
     bool disableSideband(bool isDisable);
     bool disableQms(bool isDisable);
     int32_t blankDisplay(drm_connector_type_t);
+    bool getVideoPosition(uint32_t displayId, drm_rect_t& rect);
     bool getConnectorType(uint32_t displayId, drm_connector_type_t & connectorType);
 
     bool setFixedConnectorDisplay(drm_connector_type_t connectorType);

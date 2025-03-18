@@ -63,6 +63,8 @@ public:
     static std::unique_ptr<DisplayAdapter> create();
     DisplayAdapterRemote();
     ~DisplayAdapterRemote() = default;
+    bool getVideoPosition(uint32_t displaId, int& left, int& top, int& right, int& bottom) override;
+
 private:
 
     // For later start server.
