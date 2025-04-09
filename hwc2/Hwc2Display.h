@@ -31,6 +31,7 @@
 #include "HwcModeMgr.h"
 #include "RealModeMgr.h"
 #include "IModePolicy.h"
+#include <array>
 
 class VtDisplayThread;
 class WBDisplayThread;
@@ -372,6 +373,9 @@ protected:
     // for allm
     bool mIsDisablePostProcessor = false;
     bool mNeedChangeModelist = false;
+
+    bool mNonBlock = false;
+    std::array<int32_t, 2> mLastPresentFences {-1, -1};
 };
 
 #endif/*HWC2_DISPLAY_H*/

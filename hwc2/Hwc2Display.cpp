@@ -1404,11 +1404,13 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
     if (maxRegion != 0 && mVideoLayerRegion != maxRegion) {
         sc_frame_rate_display(true, maxRect);
         mVideoLayerRegion = maxRegion;
+        mNonBlock = true;
     }
 
     if (maxRegion == 0 && mVideoLayerRegion != 0) {
         sc_frame_rate_display(false, maxRect);
         mVideoLayerRegion = 0;
+        mNonBlock = false;
     }
 
     /*collect client clear layer.*/
@@ -1571,6 +1573,11 @@ hwc2_error_t Hwc2Display::presentDisplay(int32_t* outPresentFence) {
         close(mPresentFence);
     mPresentFence = -1;
 
+    if (mLastPresentFences[1] >= 0) {
+       close(mLastPresentFences[1]);
+    }
+    mLastPresentFences[1] = -1;
+
     if (mSkipComposition) {
         *outPresentFence = -1;
     } else {
@@ -1629,7 +1636,17 @@ hwc2_error_t Hwc2Display::presentDisplay(int32_t* outPresentFence) {
         }
 
         /*need use in getReleaseFence() later, dup to return to sf.*/
-        *outPresentFence = ::dup(mPresentFence);
+        if (mNonBlock) {
+            mLastPresentFences[1] = mLastPresentFences[0];
+            mLastPresentFences[0] = ::dup(mPresentFence);
+            *outPresentFence = ::dup(mLastPresentFences[1]);
+        } else {
+            if (mLastPresentFences[0] >= 0) {
+                close(mLastPresentFences[0]);
+            }
+            mLastPresentFences[0] = -1;
+            *outPresentFence = ::dup(mPresentFence);
+        }
     }
 
     /* reset layer flag to false */
