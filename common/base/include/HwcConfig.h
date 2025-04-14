@@ -12,6 +12,8 @@
 
 #include <BasicTypes.h>
 
+#include <DrmTypes.h>
+#include <mutex>
 #define HWC_HDMI_CVBS 0xffff0000
 
 typedef enum {
@@ -83,5 +85,9 @@ public:
     static bool getHdcpPolicy();
 
     static void dump(String8 & dumpstr);
+public:
+    static bool mClientIsSf;
+
+    static std::mutex mMutex;
 };
 #endif/*HWC_CONFIG_H*/

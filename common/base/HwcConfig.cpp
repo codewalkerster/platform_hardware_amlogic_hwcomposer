@@ -20,6 +20,8 @@
 #define UBOOTENV_EXTEND_CONNECTOR_TYPE  "ubootenv.var.connector1_type"
 #define UBOOTENV_EXTEND2_CONNECTOR_TYPE "ubootenv.var.connector2_type"
 
+std::mutex HwcConfig::mMutex = std::mutex();
+bool HwcConfig::mClientIsSf = true;
 int32_t HwcConfig::getFramebufferSize(int disp, uint32_t & width, uint32_t & height) {
     char uiMode[PROPERTY_VALUE_MAX] = {0};
     if (disp == 0) {
@@ -72,6 +74,8 @@ uint32_t HwcConfig::getDisplayNum() {
 }
 
 uint32_t HwcConfig::getConnectorType(int disp) {
+    std::lock_guard<std::mutex> lock(mMutex);
+
     uint32_t connector_type = DRM_MODE_CONNECTOR_INVALID_TYPE;
     char strval[PROP_VALUE_LEN_MAX];
     const char * connectorstr = NULL;
