@@ -248,6 +248,7 @@ private:
     bool isSupport4K();
     bool isSupport4K30Hz();
     bool isSupportDeepColor();
+    bool isPreferred50Hz();
 
     int32_t getConnectorData(struct meson_policy_in* data, hdmi_dv_info_t *dinfo);
     void getConnectorUserData(struct meson_policy_in* data, hdmi_dv_info_t *dinfo);

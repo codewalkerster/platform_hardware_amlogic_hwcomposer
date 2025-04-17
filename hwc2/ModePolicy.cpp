@@ -404,6 +404,14 @@ bool ModePolicy::isFrameratePriority() {
     return !getBootEnv(UBOOTENV_FRAMERATE_PRIORITY, isFrameratePriority) || strcmp(isFrameratePriority, "true") == 0;
 }
 
+bool ModePolicy::isPreferred50Hz() {
+    char is_preferred_50hz[MESON_MODE_LEN] = {0};
+    if (DISPLAY_TYPE_TV == mDisplayType) {
+        return false;
+    }
+    return getBootEnv(UBOOTENV_PREFER_50HZ, is_preferred_50hz) && strcmp(is_preferred_50hz, "true") == 0;
+}
+
 bool ModePolicy::isSupport4K() {
     return sys_get_bool_prop(PROP_SUPPORT_4K, true);
 }
@@ -623,6 +631,9 @@ int32_t ModePolicy::getConnectorData(struct meson_policy_in* data, hdmi_dv_info_
     data->con_info.is_support4k30HZ     = isSupport4K30Hz();
     data->con_info.is_deepcolor         = isSupportDeepColor();
     data->con_info.isframeratepriority  = isFrameratePriority();
+    data->con_info.is_preferred_50hz    = isPreferred50Hz();
+
+    SYS_LOGI("is_preferred_50hz:%d\n", data->con_info.is_preferred_50hz);
 
     return 0;
 }
