@@ -211,6 +211,13 @@ error_handle:
     return false;
 }
 
+bool DisplayAdapterLocal::getConnectorType(uint32_t displayId, meson::DisplayAdapter::ConnectorType &outDisplayType) {
+    UNUSED(displayId);
+    UNUSED(outDisplayType);
+    NOTIMPLEMENTED;
+    return false;
+}
+
 bool DisplayAdapterLocal::getSupportDisplayModes(vector<DisplayModeInfo>& displayModeList, ConnectorType displayType) {
     DisplayModeInfo mode = {
            DRM_DISPLAY_MODE_NULL,
@@ -396,6 +403,11 @@ bool DisplayAdapterLocal::setHdrConversionStrategy(uint32_t passThrough, uint32_
     UNUSED(forceMode);
     NOTIMPLEMENTED;
     return ret;
+}
+
+bool DisplayAdapterLocal::getHdrSdrRatio(float & /*ratio*/, ConnectorType /*displayType*/) {
+    NOTIMPLEMENTED;
+    return false;
 }
 
 bool DisplayAdapterLocal::setDisplayRect(const Rect rect, ConnectorType displayType) {

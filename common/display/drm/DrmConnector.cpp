@@ -33,6 +33,9 @@
 #define HDMI_FRAC_RATE_POLICY "/sys/class/amhdmitx/amhdmitx0/frac_rate_policy"
 #define HDMI_TX_ALLM_MODE   "/sys/class/amhdmitx/amhdmitx0/allm_cap"
 
+#define HDR_DEFAULT_MAX_LUMINANCE (1000)
+#define SDR_DEFAULT_MAX_LUMINANCE (100)
+
 #define DRM_MODE_FLAG_EDID_VIC     (1)
 
 static const u8 default_1080p_edid[EDID_MIN_LEN] = {
@@ -796,9 +799,23 @@ void DrmConnector::updateHdrCaps() {
     if (mType == DRM_MODE_CONNECTOR_HDMIA) {
         parseHdmiHdrCapabilities(mHdrCapabilities);
         parseDvCapabilities();
-    }
-    /* for TV product*/
 
+        // edid has no luminance info use default
+        if (mHdrCapabilities.maxLuminance == 0) {
+            if (!mHdrCapabilities.HLGSupported &&
+                    !mHdrCapabilities.HDR10Supported &&
+                    !mHdrCapabilities.HDR10PlusSupported &&
+                    !mHdrCapabilities.DolbyVisionSupported) {
+                mHdrCapabilities.maxLuminance = SDR_DEFAULT_MAX_LUMINANCE;
+                mHdrCapabilities.avgLuminance = SDR_DEFAULT_MAX_LUMINANCE;
+            }  else {
+                mHdrCapabilities.maxLuminance = HDR_DEFAULT_MAX_LUMINANCE;
+                mHdrCapabilities.avgLuminance = HDR_DEFAULT_MAX_LUMINANCE;
+            }
+        }
+    }
+
+    /* for TV product*/
     if (isTvType()) {
         constexpr int sDefaultMinLumiance = 0;
         constexpr int sDefaultMaxLumiance = 500;

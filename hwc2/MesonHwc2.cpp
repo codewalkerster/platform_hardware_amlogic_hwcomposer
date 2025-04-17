@@ -1297,4 +1297,11 @@ bool MesonHwc2::setReverseMode(int type) {
     hwcDisplay->setReverseMode(type);
     return true;
 }
-
+bool MesonHwc2::getConnectorType(uint32_t displayId, drm_connector_type_t & connectorType) {
+    if (displayId < 0|| displayId > HwcConfig::getDisplayNum()) {
+        return false;
+    }
+    GET_HWC_DISPLAY(displayId);
+    connectorType = hwcDisplay->getConnectorType();
+    return true;
+}

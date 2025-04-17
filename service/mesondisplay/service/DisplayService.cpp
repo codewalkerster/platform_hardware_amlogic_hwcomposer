@@ -143,6 +143,13 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
     cmd = in["cmd"].asString();
     if (cmd == "displayType") {
         ret = mAdapter->displayType();
+    } else if (cmd == "getConnectorType") {
+        if (!in.isMember("p_displayId"))
+            goto OUT;
+        ConnectorType result;
+        ALOGE("call getConnectorType %d", in["p_displayId"].asUInt());
+        mAdapter->getConnectorType(in["p_displayId"].asUInt(), result);
+        ret["connectorType"] = static_cast<uint32_t>(result);
     } else if (cmd == "getSupportDisplayModes") {
         vector<DisplayModeInfo> displayModeList;
         Json::Value list;
@@ -275,6 +282,14 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
         if (!in.isMember("passThrough") || !in.isMember("forceMode"))
             goto OUT;
         mAdapter->setHdrConversionStrategy(in["passThrough"].asUInt(), in["forceMode"].asUInt());
+    } else if (cmd == "getHdrSdrRatio") {
+        float ratio = 1;
+        if (!in.isMember("p_displayType")) {
+            out["ret"] = ret;
+            goto OUT;
+        }
+        mAdapter->getHdrSdrRatio(ratio, (ConnectorType)in["p_displayType"].asUInt());
+        ret["ratio"] = ratio;
     } else if (cmd == "setPerferredMode") {
         if (!in.isMember("p_mode") || !in.isMember("p_displayType"))
             goto OUT;
@@ -306,7 +321,7 @@ void DisplayServer::message_handle(Json::Value& in, Json::Value& out) {
             goto OUT;
         mAdapter->setReverseMode(in["value"].asUInt());
     } else {
-        MESON_LOGE("CMD not implement!");
+        MESON_LOGE("CMD not implement: %s!", cmd.c_str());
     }
 OUT:
     out["ret"] = ret;

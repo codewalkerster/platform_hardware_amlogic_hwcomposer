@@ -40,6 +40,7 @@ static const struct option long_option[] = {
     {"reverse-display",required_argument,0,'V'},
     {"get-connector-type",required_argument,0,'n'},
     {"disable-qms",required_argument,0,'v'},
+    {"get-connector-type",required_argument,0,'n'},
     {0, 0, 0, 0}
 };
 
@@ -65,6 +66,7 @@ static void print_usage(const char* name) {
             "       -k,--set-Keystone Correction \t  params is the position\n "
             "       -V,--enable keystone reverse  \t  params is the reverse type\n "
             "       -v,--disable-qms        \t  disable [false|true] qms\n"
+            "       -n,--get-connector-type \t  get connector type by display id\n "
             "       -r,--raw-cmd           \tsend raw cmd\n"
             "                              \teg: \"userSpaceHDCPTxAuth\" \n"
             "                                    \"getSupportDisplayModes\" \n"
@@ -73,6 +75,7 @@ static void print_usage(const char* name) {
             "                                    \"getCurrentSupportDeepColor\" \n"
             "                                    \"getWhiteBoardMode\" \n"
             "                                    \"isHdmiUsed\" \n"
+            "                                    \"getHdrSdrRatio\" \n"
             "                              \teg: \"setDisplayConnector\" [connector type] TYPE could be like:\n"
             "                              \t    DUMMY\n"
             "                              \t    CVBS\n"
@@ -99,6 +102,16 @@ int main(int argc, char* argv[]) {
 
     while ((opt = getopt_long(argc, argv, short_option, long_option, NULL)) != -1) {
         switch (opt) {
+             case 'n':
+                if (optarg == NULL)
+                    break;
+                DisplayAdapter::ConnectorType result;
+                if (client->getConnectorType(std::stoi(optarg), result)) {
+                    printf("display id %d ConnectorType %d\n", std::stoi(optarg), result);
+                } else {
+                    printf("get connectorType failed\n");
+                }
+                break;
             case 'c':
                 if (optarg == NULL)
                     break;
@@ -196,6 +209,10 @@ int main(int argc, char* argv[]) {
                     bool mode = false;
                     client->getWhiteBoardMode(mode);
                     printf("get current white board %s \n", mode ? "true":"false");
+                } else if (memcmp("getHdrSdrRatio", optarg, sizeof("getHdrSdrRatio")) == 0) {
+                    float ratio;
+                    client->getHdrSdrRatio(ratio, type);
+                    printf("getHdrSdrRatio %f \n", ratio);
                 } else if (memcmp("getQmsVrrCap", optarg, sizeof("getQmsVrrCap")) == 0) {
                     bool qms = client->getQmsVrrCap();
                     printf("Qms Vrr Cap :%d\n", qms);

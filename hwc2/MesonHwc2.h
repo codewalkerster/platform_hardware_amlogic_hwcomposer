@@ -195,6 +195,7 @@ public:
     bool disableSideband(bool isDisable);
     bool disableQms(bool isDisable);
     int32_t blankDisplay(drm_connector_type_t);
+    bool getConnectorType(uint32_t displayId, drm_connector_type_t & connectorType);
 
     int mCallingPid = -1;
     bool mWhiteBoardMode = false;

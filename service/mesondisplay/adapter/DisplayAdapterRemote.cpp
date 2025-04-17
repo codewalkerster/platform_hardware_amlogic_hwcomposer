@@ -38,6 +38,22 @@ DisplayAdapter::BackendType DisplayAdapterRemote::displayType() {
     }
 }
 
+bool DisplayAdapterRemote::getConnectorType(uint32_t displayId, meson::DisplayAdapter::ConnectorType &outDisplayType) {
+    Json::Value cmd, ret;
+    IF_SERVER_NOT_READY_RETURN(false);
+    cmd["cmd"] = "getConnectorType";
+    cmd["p_displayId"] = displayId;
+    ipc->send_request_wait_reply(cmd, ret);
+    if (ret.isMember("ret") && ret["ret"].isMember("connectorType")) {
+        Json::Value& value = ret["ret"]["connectorType"];
+        outDisplayType = static_cast<ConnectorType>(value.asUInt());
+        return true;
+    } else {
+        MESON_LOGE("Get Wrong DisplayIds info");
+        return false;
+    }
+}
+
 bool DisplayAdapterRemote::getSupportDisplayModes(vector<DisplayModeInfo>& displayModeList, ConnectorType displayType) {
     Json::Value cmd, ret;
     IF_SERVER_NOT_READY_RETURN(false);
@@ -204,6 +220,22 @@ bool DisplayAdapterRemote::setHdrConversionStrategy(uint32_t passThrough, uint32
     cmd["forceMode"] = forceMode;
     ipc->send_request(cmd);
     return true;
+}
+
+bool DisplayAdapterRemote::getHdrSdrRatio(float & ratio, ConnectorType displayType) {
+    Json::Value cmd, ret;
+    IF_SERVER_NOT_READY_RETURN(false);
+    ratio = 1;
+
+    cmd["cmd"] = "getHdrSdrRatio";
+    cmd["p_displayType"]= static_cast<int>(displayType);
+    ipc->send_request_wait_reply(cmd, ret);
+    if (ret.isMember("ret") && !ret["ret"]["ratio"].empty()) {
+        ratio = ret["ret"]["ratio"].asFloat();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool DisplayAdapterRemote::setDisplayRect(const Rect rect, ConnectorType displayType) {

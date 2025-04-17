@@ -70,6 +70,7 @@ public:
     AdapterType type() override { return ADAPTER_TYPE_LOCAL; }
     BackendType displayType() override;
 
+    bool getConnectorType(uint32_t displayId, ConnectorType &outDisplayType) override;
     bool getSupportDisplayModes(vector<DisplayModeInfo>& displayModeList, ConnectorType displayType) override;
     bool getDisplayMode(string& mode, ConnectorType displayType) override;
     bool setDisplayMode(const string& mode, ConnectorType displayType) override;
@@ -91,6 +92,7 @@ public:
     bool enableSyncProtection(bool mode) override;
     bool disableSidebandStream(bool isDisable) override;
     bool setHdrConversionStrategy(uint32_t passThrough, uint32_t forceMode) override;
+    bool getHdrSdrRatio(float & ratio, ConnectorType displayType) override;
     bool setPerferredMode(const string& mode, ConnectorType displayType) override;
     bool getCurrentSupportDeepColor(string &color, ConnectorType displayType) override;
     bool setColorSpace(const string& colorspace, ConnectorType displayType) override;

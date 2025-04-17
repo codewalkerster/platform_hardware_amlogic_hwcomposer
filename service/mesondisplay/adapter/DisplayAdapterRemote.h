@@ -23,6 +23,7 @@ public:
     virtual bool isReady() override {
         return connectServerIfNeed();
     }
+    bool getConnectorType(uint32_t displayId, meson::DisplayAdapter::ConnectorType &outDisplayType);
     bool getSupportDisplayModes(vector<DisplayModeInfo>& displayModeList, ConnectorType displayType) override;
     bool getDisplayMode(string& mode, ConnectorType displayType) override;
     bool setDisplayMode(const string& mode, ConnectorType displayType) override;
@@ -41,6 +42,7 @@ public:
     bool setWBDisplayFrame(int x, int y) override;
     bool hideVideoLayer(bool hide) override;
     bool setHdrConversionStrategy(uint32_t passThrough, uint32_t forcemode) override;
+    bool getHdrSdrRatio(float & ratio, ConnectorType displayType) override;
     bool disableQms(bool isDisable) override;
     bool getQmsVrrCap() override;
 
