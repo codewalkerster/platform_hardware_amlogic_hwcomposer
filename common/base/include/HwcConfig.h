@@ -78,10 +78,12 @@ public:
     static bool mosaicEnabled();
     static bool UvmDetachEnabled();
     static bool DiProcessorEnabled();
+    static bool AiSubTitleProcessorEnabled();
     static int32_t getSupportDiChannelNumber();
     static int32_t getSupportAiSrChannelNumber();
     static int32_t getSupportAiPqChannelNumber();
     static int32_t getSupportAiColorChannelNumber();
+    static int32_t getSupportAiSubTitleChannelNumber();
     static bool getHdcpPolicy();
 
     static void dump(String8 & dumpstr);

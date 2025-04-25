@@ -116,6 +116,10 @@ ifndef HWC_VIDEO_DI
 HWC_VIDEO_DI := false
 endif
 
+ifndef HWC_VIDEO_AISUBTITLE
+HWC_VIDEO_AISUBTITLE := false
+endif
+
 ifndef HWC_VT_HW_VSYNC
 HWC_VT_HW_VSYNC := false
 endif
@@ -190,6 +194,7 @@ $(call soong_config_set,meson_hwc,enable_video_aipq_gpu,$(HWC_VIDEO_AIPQ_GPU))
 $(call soong_config_set,meson_hwc,enable_video_aiface,$(HWC_VIDEO_AIFACE))
 $(call soong_config_set,meson_hwc,enable_video_aicolor,$(HWC_VIDEO_AICOLOR))
 $(call soong_config_set,meson_hwc,enable_video_di,$(HWC_VIDEO_DI))
+$(call soong_config_set,meson_hwc,enable_video_aisubtitle,$(HWC_VIDEO_AISUBTITLE))
 $(call soong_config_set,meson_hwc,enable_uvm_detach,$(HWC_UVM_DETACH))
 $(call soong_config_set,meson_hwc,filter_16_9mode,$(HWC_FILTER_16_9MODE))
 $(call soong_config_set,meson_hwc,android_platform_sdk_extension_version,$(PLATFORM_SDK_EXTENSION_VERSION))

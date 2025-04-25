@@ -84,6 +84,7 @@ soong_config_module_type {
         "enable_virtual_layer",
         "enable_ai_process_120",
         "enable_video_di",
+        "enable_video_aisubtitle",
         "enable_hal_virtualdisplay",
         "enable_error_monitor",
     ],
@@ -140,6 +141,10 @@ soong_config_bool_variable {
 }
 
 soong_config_bool_variable {
+    name: "enable_video_aisubtitle",
+}
+
+soong_config_bool_variable {
     name: "enable_error_monitor",
 }
 
@@ -181,6 +186,10 @@ meson_hwc_cc_defaults {
 
         enable_video_di: {
             cflags: ["-DENABLE_VIDEO_DI"],
+        },
+
+        enable_video_aisubtitle: {
+            cflags: ["-DENABLE_VIDEO_AISUBTITLE"],
         },
 
         enable_aidl: {

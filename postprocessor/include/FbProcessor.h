@@ -24,6 +24,7 @@ typedef enum {
     FB_AIFACE_PROCESSOR,
     FB_AICOLOR_PROCESSOR,
     FB_DI_PROCESSOR,
+    FB_AISUBTITLE_PROCESSOR,
 } meson_fb_processor_t;
 
 class FbProcessor {

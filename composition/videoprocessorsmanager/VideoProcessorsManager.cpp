@@ -20,6 +20,7 @@ VideoProcessorsManager::VideoProcessorsManager() {
     mPqProcessors.clear();
     mColorProcessors.clear();
     mDiProcessors.clear();
+    mSubTitleProcessors.clear();
     mFbProcessorsPairs.clear();
     mResetFlagPairs.clear();
     mVideoFbsNum = -1;
@@ -72,6 +73,7 @@ void VideoProcessorsManager::prepare(
     destroyUnusedProcessor(mSrProcessors);
     destroyUnusedProcessor(mPqProcessors);
     destroyUnusedProcessor(mColorProcessors);
+    destroyUnusedProcessor(mSubTitleProcessors);
 
     for (auto search = mResetFlagPairs.begin();
             search != mResetFlagPairs.end(); ) {
@@ -338,11 +340,74 @@ int VideoProcessorsManager::setUpDiProcessor() {
     return 0;
 }
 
+int VideoProcessorsManager::setUpAiSubTitleProcessor() {
+    std::shared_ptr<FbProcessor> processor;
+    std::vector<hwc2_layer_t> layerIds;
+    hwc2_layer_t id;
+    int i, num, needMaxNum, supportChannelNum;
+    bool bFlag = false;
+
+    if (mVideoFbsNum != 1) {
+        /* TODO: currently only support one channel video for AiSubtitle.
+         * donot enable aipq processor when there's multiple video channels
+         */
+        tearDownSubTitleProcessors();
+        return 0;
+    }
+
+    if (!DebugHelper::getInstance().disableAISRAIPQ() &&
+        HwcConfig::AiSubTitleProcessorEnabled()) {
+        for (auto fbIt = mVideoFbs.begin(); fbIt != mVideoFbs.end(); fbIt++) {
+            id = (*fbIt)->getUniqueId();
+            bFlag = false;
+
+            auto prIt = mSubTitleProcessors.begin();
+            for (; prIt != mSubTitleProcessors.end(); prIt++) {
+                if (id == (*prIt)->getUseLayerId()) {
+                    bFlag = true;
+                    break;
+                }
+            }
+
+            if (!bFlag) layerIds.push_back(id);
+        }
+
+        // setup AiPqprocessor
+        supportChannelNum = HwcConfig::getSupportAiSubTitleChannelNumber();
+        needMaxNum =
+            mVideoFbsNum > supportChannelNum ? supportChannelNum : mVideoFbsNum;
+
+        MESON_LOGV("%s: create %d channel AISubTitle processor",
+                __FUNCTION__, needMaxNum);
+        if (mSubTitleProcessors.size() < needMaxNum) {
+            num = needMaxNum - mSubTitleProcessors.size();
+            if (num > layerIds.size()) {
+                MESON_LOGW("%s, setup AISubTitle processor failed", __FUNCTION__);
+                return 0;
+            }
+
+            for (i = 0; i < num; i++) {
+                MESON_LOGV("%s: create AISubTitle processor for layerID:%" PRIu64,
+                        __FUNCTION__, (*layerIds.begin()));
+                createFbProcessor(FB_AISUBTITLE_PROCESSOR, processor);
+                processor->setup();
+                processor->setUseLayerId(*layerIds.begin());
+                layerIds.erase(layerIds.begin());
+                mSubTitleProcessors.push_back(processor);
+            }
+        } else if (mSubTitleProcessors.size() > needMaxNum) {
+            MESON_LOGW("%s: AISubTitle, that should be impossible", __FUNCTION__);
+        }
+    }
+
+    return 0;
+}
 int VideoProcessorsManager::setUpAllProcessors() {
     setUpAiSrProcessor();
     setUpAiPqProcessor();
     setUpAiColorProcessor();
     setUpDiProcessor();
+    setUpAiSubTitleProcessor();
 
     return 0;
 }
@@ -391,11 +456,23 @@ void VideoProcessorsManager::tearDownDiProcessors() {
     }
 }
 
+void VideoProcessorsManager::tearDownSubTitleProcessors() {
+    if (!mSubTitleProcessors.empty()) {
+        MESON_LOGV("%s: tear down all AISubTitle processors", __FUNCTION__);
+        auto it = mSubTitleProcessors.begin();
+        for (; it != mSubTitleProcessors.end(); it++)
+            (*it)->teardown();
+
+        mSubTitleProcessors.clear();
+    }
+}
+
 void VideoProcessorsManager::tearDownAllProcessors() {
     tearDownSrProcessors();
     tearDownPqProcessors();
     tearDownColorProcessors();
     tearDownDiProcessors();
+    tearDownSubTitleProcessors();
 }
 
 bool VideoProcessorsManager::resetProcessors (
@@ -473,6 +550,14 @@ int VideoProcessorsManager::resetAllProcessors() {
         }
     }
 
+    if (!mSubTitleProcessors.empty()) {
+        auto it = mSubTitleProcessors.begin();
+        for (; it != mSubTitleProcessors.end(); it++) {
+            (*it)->teardown();
+            (*it)->setup();
+        }
+    }
+
     return 0;
 }
 
@@ -483,7 +568,7 @@ void VideoProcessorsManager::setProcessors(
     std::vector<std::shared_ptr<FbProcessor>> vProcessors;
 
     std::vector<std::vector<std::shared_ptr<FbProcessor>>> allProcessors = {
-        mPqProcessors, mColorProcessors, mDiProcessors, mSrProcessors,
+        mPqProcessors, mColorProcessors, mSubTitleProcessors, mDiProcessors, mSrProcessors,
     };
 
     // remove processor for destroy layer

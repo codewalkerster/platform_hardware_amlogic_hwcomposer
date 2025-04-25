@@ -26,6 +26,9 @@
 #ifdef ENABLE_VIDEO_DI
 #include "DiProcessor.h"
 #endif
+#ifdef ENABLE_VIDEO_AISUBTITLE
+#include "AiSubtitleProcessor.h"
+#endif
 
 #include "CompositionProcessor.h"
 
@@ -75,6 +78,11 @@ int32_t createFbProcessor(
 #ifdef ENABLE_VIDEO_DI
         case FB_DI_PROCESSOR:
             processor = std::make_shared<DiProcessor>();
+            break;
+#endif
+#ifdef ENABLE_VIDEO_AISUBTITLE
+       case FB_AISUBTITLE_PROCESSOR:
+            processor = std::make_shared<AiSubtitleProcessor>();
             break;
 #endif
         default:

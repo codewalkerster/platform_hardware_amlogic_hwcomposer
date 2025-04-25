@@ -355,6 +355,14 @@ bool HwcConfig::DiProcessorEnabled() {
 #endif
 }
 
+bool HwcConfig::AiSubTitleProcessorEnabled() {
+#ifdef ENABLE_VIDEO_AISUBTITLE
+    return true;
+#else
+    return false;
+#endif
+}
+
 int32_t HwcConfig::getSupportDiChannelNumber() {
     int ret = 0;
 
@@ -380,6 +388,11 @@ int32_t HwcConfig::getSupportAiPqChannelNumber() {
 }
 
 int32_t HwcConfig::getSupportAiColorChannelNumber() {
+/* currently, only one channel for aicolor is supported */
+    return 1;
+}
+
+int32_t HwcConfig::getSupportAiSubTitleChannelNumber() {
 /* currently, only one channel for aicolor is supported */
     return 1;
 }
@@ -446,9 +459,11 @@ void HwcConfig::dump(String8 & dumpstr) {
             dumpstr.append("\n");
             dumpstr.appendFormat("\t AiPqProcessor: %s", AiPqProcessorEnabled() ? "Y" : "N");
             dumpstr.append("\n");
-            dumpstr.appendFormat("\t Mosaic: %s", mosaicEnabled() ? "Y" : "N");
-            dumpstr.append("\n");
             dumpstr.appendFormat("\t AiColorProcessor: %s", AiColorProcessorEnabled() ? "Y" : "N");
+            dumpstr.append("\n");
+            dumpstr.appendFormat("\t AiSubTitleProcessor: %s", AiSubTitleProcessorEnabled() ? "Y" : "N");
+            dumpstr.append("\n");
+            dumpstr.appendFormat("\t Mosaic: %s", mosaicEnabled() ? "Y" : "N");
             dumpstr.append("\n");
             dumpstr.appendFormat("\t UvmDetach: %s", UvmDetachEnabled() ? "Y" : "N");
             dumpstr.append("\n");

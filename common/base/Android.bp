@@ -62,6 +62,7 @@ soong_config_module_type {
         "enable_video_aipq",
         "enable_video_aisr",
         "enable_video_di",
+        "enable_video_aisubtitle",
         "enable_video_mosaic",
         "enable_uvm_detach",
         "enable_hdcp_policy",
@@ -153,6 +154,10 @@ soong_config_bool_variable {
 
 soong_config_bool_variable {
     name: "enable_video_di",
+}
+
+soong_config_bool_variable {
+    name: "enable_video_aisubtitle",
 }
 
 soong_config_bool_variable {
@@ -283,7 +288,7 @@ meson_common_base_cc_defaults {
         },
 
         enable_video_aipq:{
-            cflags: ["-DENABLE_VIDEO_AOPQ"],
+            cflags: ["-DENABLE_VIDEO_AIPQ"],
         },
 
         enable_video_aiface:{
@@ -296,6 +301,10 @@ meson_common_base_cc_defaults {
 
         enable_video_di:{
             cflags: ["-DENABLE_VIDEO_DI"],
+        },
+
+        enable_video_aisubtitle:{
+            cflags: ["-DENABLE_VIDEO_AISUBTITLE"],
         },
 
         enable_video_mosaic: {

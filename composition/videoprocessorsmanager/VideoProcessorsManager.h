@@ -24,6 +24,7 @@ public:
     int setUpAiPqProcessor();
     int setUpAiColorProcessor();
     int setUpDiProcessor();
+    int setUpAiSubTitleProcessor();
     int setUpAllProcessors();
 
     void setProcessors(std::shared_ptr<DrmFramebuffer>& fb);
@@ -34,6 +35,7 @@ public:
     void tearDownColorProcessors();
     void tearDownDiProcessors();
     void tearDownAllProcessors();
+    void tearDownSubTitleProcessors();
 
     bool resetProcessors(std::shared_ptr<DrmFramebuffer> & fb);
     int resetAllProcessors();
@@ -58,6 +60,7 @@ protected:
     std::vector<std::shared_ptr<FbProcessor>> mPqProcessors;
     std::vector<std::shared_ptr<FbProcessor>> mColorProcessors;
     std::vector<std::shared_ptr<FbProcessor>> mDiProcessors;
+    std::vector<std::shared_ptr<FbProcessor>> mSubTitleProcessors;
 
     std::map<hwc2_layer_t, std::vector<std::shared_ptr<FbProcessor>>> mFbProcessorsPairs;
     std::map<hwc2_layer_t, bool> mResetFlagPairs;
