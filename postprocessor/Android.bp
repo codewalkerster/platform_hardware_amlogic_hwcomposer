@@ -36,6 +36,7 @@ soong_config_module_type {
         "enable_video_aiface",
         "enable_video_aicolor",
         "enable_video_di",
+        "enable_video_aisubtitle",
     ],
 
     properties: [
@@ -78,6 +79,19 @@ meson_hwc_postprocessor_defaults {
             ],
             header_libs: [
                 "libnnsdk_headers",
+            ],
+            export_include_dirs: [
+                "nnprocess",
+            ]
+        },
+        enable_video_aisubtitle: {
+            srcs: [
+                "nnprocess/AiSubtitleProcessor.cpp",
+                "nnprocess/adaptive_subtitle.cpp",
+            ],
+            shared_libs: [
+                "libion",
+                "libui",
             ],
             export_include_dirs: [
                 "nnprocess",
