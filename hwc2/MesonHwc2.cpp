@@ -361,6 +361,7 @@ int32_t MesonHwc2::setPowerMode(hwc2_display_t display,
          * need switch connector
          */
         if (mode == HWC2_POWER_MODE_OFF && mAidlCilentIsSF) {
+            HwDisplayEventListener::getInstance().setSuspendState(true);
             mDisplayPipe->handleEvent(DRM_EVENT_HDMITX_HOTPLUG, DRM_EVENT_SUSPEND);
         }
     }
