@@ -1644,8 +1644,8 @@ hwc2_error_t Hwc2Display::presentDisplay(int32_t* outPresentFence) {
             if (mLastPresentFences[0] >= 0) {
                 close(mLastPresentFences[0]);
             }
-            mLastPresentFences[0] = -1;
             *outPresentFence = ::dup(mPresentFence);
+            mLastPresentFences[0] = ::dup(mPresentFence);
         }
     }
 
