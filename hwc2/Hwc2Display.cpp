@@ -1355,6 +1355,7 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
     ISystemControl::Rect maxRect{0, 0, 0, 0};
 
     bool hasDecoration = false;
+    bool hasClientLayer = false;
     /*collect display requested, and changed composition type.*/
     for (auto it = mPresentLayers.begin() ; it != mPresentLayers.end(); it++) {
         layer = (Hwc2Layer*)(it->get());
@@ -1362,6 +1363,9 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
             continue;
         }
 
+        if (layer->mCompositionType == MESON_COMPOSITION_CLIENT) {
+            hasClientLayer = true;
+        }
         /* decoration type not support it now */
         if (layer->mFbType == DRM_FB_DECORATION) {
             hasDecoration = true;
@@ -1404,9 +1408,13 @@ hwc2_error_t Hwc2Display::collectCompositionRequest(
     if (maxRegion != 0 && mVideoLayerRegion != maxRegion) {
         sc_frame_rate_display(true, maxRect);
         mVideoLayerRegion = maxRegion;
-        mNonBlock = true;
+        if (HwcConfig::DiProcessorEnabled()) {
+            mNonBlock = true;
+        }
     }
-
+    if (hasClientLayer) {
+        mNonBlock = false;
+    }
     if (maxRegion == 0 && mVideoLayerRegion != 0) {
         sc_frame_rate_display(false, maxRect);
         mVideoLayerRegion = 0;
