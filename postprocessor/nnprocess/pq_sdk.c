@@ -69,16 +69,25 @@ void process_top5(float *buf, unsigned int num, img_classify_out_t* cls_out)
     }
 }
 
-void* process_network(void *qcontext,unsigned char *qrawdata) {
+void* process_network(void *qcontext,unsigned char *qrawdata, bool is_secure, unsigned char *paddr){
+// void* process_network(void *qcontext,unsigned char *qrawdata) {
     int ret = 0;
     nn_output *outdata = NULL;
-
     aml_output_config_t outconfig;
+
+    if (is_secure) {
+        inData.input_type = INPUT_DMA_SECURE_DATA;
+        inData.input = paddr;
+    }
+    else {
+        inData.input_type = BINARY_RAW_DATA;
+        inData.input = qrawdata;
+    }
+
+    memset(&outconfig, 0, sizeof(aml_output_config_t));
     outconfig.typeSize = sizeof(aml_output_config_t);
     outconfig.mdType = CUSTOM_NETWORK;
     outconfig.format = AML_OUTDATA_FLOAT32;
-
-    inData.input = qrawdata;
 
     if ((func_inputSet != NULL)
         && (func_outputGet != NULL)) {
@@ -102,7 +111,7 @@ void* process_network(void *qcontext,unsigned char *qrawdata) {
     }
 }
 
-void* init(const char *path, int model_type, int inputWidth, int inputHeight) {
+void* init(const char *path, int model_type, int inputWidth, int inputHeight, bool is_secure) {
     if (func_create != NULL) {
         void *qcontext = NULL;
         aml_config config;
@@ -111,14 +120,15 @@ void* init(const char *path, int model_type, int inputWidth, int inputHeight) {
         config.path = path;
         config.nbgType = NN_NBG_FILE;
         config.modelType = (amlnn_model_type)model_type;
+        config.secure_config = is_secure;
         qcontext = func_create(&config);
         if (qcontext == NULL) {
             ALOGE("amlnn_init is fail\n");
             return NULL;
         }
+
         inData.input_index = 0;
         inData.size = inputWidth * inputHeight * 3;
-        inData.input_type = BINARY_RAW_DATA;
 
         return qcontext;
     }else {
