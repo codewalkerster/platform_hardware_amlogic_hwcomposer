@@ -17,13 +17,18 @@
 #include <UvmDev.h>
 #include "pq_sdk.h"
 
+#define ADLA_PTA_UUID { 0x777050be, 0xb5f8, 0x4c06, \
+                  { 0x81, 0xca, 0x52, 0x3a, 0xb2, 0x02, 0xa3, 0x8a } }
+#define ADLA_CMD_GET_AIPQ_RAM   2
+
 #define NN_INPUT_FRAME_WIDTH_DEFAULT    224
 #define NN_INPUT_FRAME_HEIGHT_DEFAULT   224
 #define MAX_SCENE 7
 #define AI_OUT_SCENE 5
 #define AI_PQ_TOP AI_OUT_SCENE
 #define AIPQ_MAX_CACHE_COUNT 5
-#define AIPQ_NB_PATH            "/vendor/bin/nn/PQNet.nb"
+#define AIPQ_NB_NORMAL_PATH            "/vendor/bin/nn/PQNet.nb"
+#define AIPQ_NB_SECURE_PATH            "/vendor/bin/nn/PQNet.tadla"
 #define AIPQ_SCENE_DATA_PATH    "/vendor/etc/scenes_data.txt"
 #define AIPQ_SKIP_FRAME_HEIGHT    1088
 #define SC_TH 512
@@ -72,7 +77,12 @@ struct uvm_aipq_info {
     int32_t omx_index;
     int32_t nn_do_aipq_type;   /*0:hardware 1:gpu*/
     int32_t is_sc_change;
-    int32_t reserved[7];
+    int32_t nn_get_fmt_type; /*0:rgb24 1:bgr24*/
+    int32_t is_secure_source;
+    int32_t is_support_secure_aipq;
+    uint64_t secure_buf_paddr;
+    uint32_t secure_buf_size;
+    int32_t reserved[2];
 };
 
 struct uvm_aipq_info_t {
@@ -116,12 +126,17 @@ public:
     void threadProcess();
     int32_t waitEvent(int microseconds);
     static void *mNn_qcontext;
+    static void *mNn_qcontext_secure;
+    static bool mIsSupportSecureAipq;
     static bool mModelLoaded;
+    static uint64_t mSecureBufPaddr;
+    static uint32_t mSecureBufSize;
     mutable std::mutex mMutex;
     mutable std::mutex mMutex_index;
     std::queue<int> mBuf_fd_q;
     static void * threadMain(void * data);
     static void * threadNnInit(void * data);
+    int getTeeBufferData();
     int LoadNNModel();
     pthread_t mThread;
     pthread_t mThreadNnInit;

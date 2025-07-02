@@ -78,6 +78,7 @@ soong_config_module_type {
         "enable_video_aisr",
         "enable_video_aipq",
         "enable_video_aipq_gpu",
+        "enable_video_aipq_secure",
         "enable_video_aiface",
         "enable_video_aicolor",
         "enable_aidl",
@@ -122,6 +123,10 @@ soong_config_bool_variable {
 
 soong_config_bool_variable {
     name: "enable_video_aipq_gpu",
+}
+
+soong_config_bool_variable {
+    name: "enable_video_aipq_secure",
 }
 
 soong_config_bool_variable {
@@ -174,6 +179,10 @@ meson_hwc_cc_defaults {
 
         enable_video_aipq_gpu: {
             cflags: ["-DENABLE_VIDEO_AIPQ_GPU"],
+        },
+
+        enable_video_aipq_secure: {
+            cflags: ["-DENABLE_VIDEO_AIPQ_SECURE"],
         },
 
         enable_video_aiface: {
@@ -248,5 +257,6 @@ meson_hwc_cc_defaults {
         "libz",
         "vendor.amlogic.hardware.errormonitor@1.0",
         "liberrormonitorclient",
+        "libteec",
     ],
 }

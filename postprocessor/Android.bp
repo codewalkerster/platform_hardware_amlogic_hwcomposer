@@ -76,6 +76,7 @@ meson_hwc_postprocessor_defaults {
             shared_libs: [
                 "libion",
                 "libui",
+                "libteec",
             ],
             header_libs: [
                 "libnnsdk_headers",

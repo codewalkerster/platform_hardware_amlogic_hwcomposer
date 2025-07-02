@@ -104,6 +104,10 @@ ifndef HWC_VIDEO_AIPQ
 HWC_VIDEO_AIPQ := false
 endif
 
+ifndef HWC_VIDEO_AIPQ_SECURE
+HWC_VIDEO_AIPQ_SECURE := false
+endif
+
 ifndef HWC_VIDEO_AIFACE
 HWC_VIDEO_AIFACE := false
 endif
@@ -191,6 +195,7 @@ $(call soong_config_set,meson_hwc,enable_vt_hwVsync,$(HWC_VT_HW_VSYNC))
 $(call soong_config_set,meson_hwc,enable_video_aisr,$(HWC_VIDEO_AISR))
 $(call soong_config_set,meson_hwc,enable_video_aipq,$(HWC_VIDEO_AIPQ))
 $(call soong_config_set,meson_hwc,enable_video_aipq_gpu,$(HWC_VIDEO_AIPQ_GPU))
+$(call soong_config_set,meson_hwc,enable_video_aipq_secure,$(HWC_VIDEO_AIPQ_SECURE))
 $(call soong_config_set,meson_hwc,enable_video_aiface,$(HWC_VIDEO_AIFACE))
 $(call soong_config_set,meson_hwc,enable_video_aicolor,$(HWC_VIDEO_AICOLOR))
 $(call soong_config_set,meson_hwc,enable_video_di,$(HWC_VIDEO_DI))

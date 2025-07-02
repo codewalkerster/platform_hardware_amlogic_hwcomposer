@@ -24,6 +24,12 @@
 #include <ui/GraphicBufferAllocator.h>
 #include <hardware/gralloc1.h>
 #include <math.h>
+#include <unistd.h>
+
+/* OP-TEE TEE client API (built by optee_client) */
+extern "C" {
+#include <tee_client_api.h>
+}
 
 #define FENCE_TIMEOUT_MS 1000
 
@@ -46,7 +52,11 @@ struct aipq_time_info_t AipqProcessor::mTime;
 int AipqProcessor::mSkin_index_class1;
 int AipqProcessor::mSkin_index_class2;
 bool AipqProcessor::mModelLoaded;
+uint64_t AipqProcessor::mSecureBufPaddr;
+uint32_t AipqProcessor::mSecureBufSize;
 void* AipqProcessor::mNn_qcontext;
+void* AipqProcessor::mNn_qcontext_secure;
+bool AipqProcessor::mIsSupportSecureAipq = 0;
 int AipqProcessor::mLogLevel = 0;
 
 int AipqProcessor::check_D() {
@@ -319,6 +329,60 @@ static void get_vnn_scenes_data()
     fclose(fp);
 }
 
+int AipqProcessor::getTeeBufferData()
+{
+    TEEC_Result res;
+    TEEC_Context ctx;
+    TEEC_Session sess;
+    TEEC_Operation op;
+    TEEC_UUID uuid = ADLA_PTA_UUID;
+    uint32_t err_origin;
+
+    /* Initialize a context connecting us to the TEE */
+    res = TEEC_InitializeContext(NULL, &ctx);
+    if (res != TEEC_SUCCESS) {
+        ALOGD("%s: TEEC_InitializeContext failed with code 0x%x", __FUNCTION__, res);
+        return -1;
+    }
+
+    res = TEEC_OpenSession(&ctx, &sess, &uuid,
+                   TEEC_LOGIN_PUBLIC, NULL, NULL, &err_origin);
+    if (res != TEEC_SUCCESS) {
+        ALOGD("%s: TEEC_Opensession failed with code 0x%x origin 0x%x",
+            __FUNCTION__, res, err_origin);
+        TEEC_FinalizeContext(&ctx);
+        return -1;
+    }
+
+    memset(&op, 0, sizeof(op));
+
+    /******************************************************************/
+    ALOGD_IF(mLogLevel > 1, "Invoke ADLA_CMD_GET_AIPQ_RAM \n");
+    op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_OUTPUT, TEEC_NONE,
+                     TEEC_NONE, TEEC_NONE);
+
+    res = TEEC_InvokeCommand(&sess, ADLA_CMD_GET_AIPQ_RAM, &op,
+                 &err_origin);
+    if (res != TEEC_SUCCESS) {
+        ALOGD("%s: TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
+            __FUNCTION__, res, err_origin);
+        TEEC_CloseSession(&sess);
+        TEEC_FinalizeContext(&ctx);
+        return -1;
+    }
+    mSecureBufPaddr = op.params[0].value.a;
+    mSecureBufSize = op.params[0].value.b;
+
+    ALOGD_IF(mLogLevel > 1, "ADLA_CMD_GET_AIPQ_RAM done, aipq_buf_paddr %" PRIx64 " aipq_buf_size %x\n",
+        mSecureBufPaddr, mSecureBufSize);
+    /******************************************************************/
+
+    TEEC_CloseSession(&sess);
+    TEEC_FinalizeContext(&ctx);
+
+    return 0;
+}
+
 void * AipqProcessor::threadNnInit(void * data) {
     AipqProcessor * pThis = (AipqProcessor *) data;
 
@@ -370,12 +434,27 @@ AipqProcessor::AipqProcessor() {
         mTime.total_time = 0;
         mTime.avg_time = 0;
         mNn_qcontext = NULL;
+        mNn_qcontext_secure = NULL;
         mModelLoaded = false;
         isPqInterfaceImplement();
         mThreadNnInit = false;
     }
 
     if (mInstanceID == 0) {
+#ifdef ENABLE_VIDEO_AIPQ_SECURE
+        if (!access(AIPQ_NB_SECURE_PATH, F_OK)) {
+            mIsSupportSecureAipq = true;
+            ALOGD("%s:support secure aipq\n", __FUNCTION__);
+        } else {
+            mIsSupportSecureAipq = false;
+            ALOGD("%s:not support secure aipq,reason1\n", __FUNCTION__);
+        }
+#else
+        mIsSupportSecureAipq = false;
+        ALOGD("%s:not support secure aipq,reason2\n", __FUNCTION__);
+#endif
+        getTeeBufferData();
+
         if (mExitThreadNnInit == true) {
             ALOGD("threadNnInit creat");
             mExitThreadNnInit = false;
@@ -539,6 +618,12 @@ int32_t AipqProcessor::asyncProcess(
     aipq_info->repeat_frame = 0;
     aipq_info->nn_input_frame_height = mNnInputVframeHeight;
     aipq_info->nn_input_frame_width = mNnInputVframeWidth;
+    if (mIsSupportSecureAipq)
+        aipq_info->is_support_secure_aipq = 1;
+    else
+        aipq_info->is_support_secure_aipq = 0;
+    aipq_info->secure_buf_paddr = mSecureBufPaddr;
+    aipq_info->secure_buf_size = mSecureBufSize;
 
 #ifdef ENABLE_VIDEO_AIPQ_GPU
     aipq_info->nn_do_aipq_type = NN_USE_GPU;
@@ -569,6 +654,14 @@ int32_t AipqProcessor::asyncProcess(
 
     if (aipq_info->repeat_frame != 0) {
         ALOGD_IF(check_D(), "aipq not need do again");
+        goto bypass;
+    }
+
+    ALOGD_IF(check_D(), "is_secure_source=%d, mIsSupportSecureAipq=%d",
+        aipq_info->is_secure_source, mIsSupportSecureAipq);
+
+    if (aipq_info->is_secure_source && !mIsSupportSecureAipq) {
+        ALOGD_IF(check_D(), "secure source, but not support secure aipq\n");
         goto bypass;
     }
 
@@ -797,10 +890,19 @@ int AipqProcessor::LoadNNModel() {
             break;
         }
     }
-    mNn_qcontext = init(AIPQ_NB_PATH, 1, mNnInputVframeWidth, mNnInputVframeHeight);
+    mNn_qcontext = init(AIPQ_NB_NORMAL_PATH, 1, mNnInputVframeWidth, mNnInputVframeHeight, 0);
     if (mNn_qcontext == NULL) {
-        ALOGE("ai_pq_init fail! %s\n", AIPQ_NB_PATH);
+        ALOGE("ai_pq_init normal fail! %s\n", AIPQ_NB_NORMAL_PATH);
         return -1;
+    }
+
+    ALOGD_IF(check_D(), "mIsSupportSecureAipq=%d\n", mIsSupportSecureAipq);
+    if (mIsSupportSecureAipq) {
+        mNn_qcontext_secure = init(AIPQ_NB_SECURE_PATH, 1, mNnInputVframeWidth, mNnInputVframeHeight, 1);
+        if (mNn_qcontext_secure == NULL) {
+            ALOGE("support secure aipq but ai_pq_init secure fail, will not do secure aipq! %s\n", AIPQ_NB_SECURE_PATH);
+            mIsSupportSecureAipq = false;
+        }
     }
 
     clock_gettime(CLOCK_MONOTONIC, &time2);
@@ -1016,6 +1118,13 @@ int32_t AipqProcessor::ai_pq_process(int cache_index) {
     aipq_info->nn_input_frame_height = mNnInputVframeHeight;
     aipq_info->nn_input_frame_width = mNnInputVframeWidth;
 
+    if (mIsSupportSecureAipq)
+        aipq_info->is_support_secure_aipq = 1;
+    else
+        aipq_info->is_support_secure_aipq = 0;
+    aipq_info->secure_buf_paddr = mSecureBufPaddr;
+    aipq_info->secure_buf_size = mSecureBufSize;
+
 #ifdef ENABLE_VIDEO_AIPQ_GPU
     aipq_info->nn_do_aipq_type = NN_USE_GPU;
     ALOGD_IF(check_D(),"pq thread fd=%d\n", input_fd);
@@ -1089,7 +1198,7 @@ int32_t AipqProcessor::ai_pq_process(int cache_index) {
             ALOGD_IF(check_D(),"do aipq: hist[%d]=%d\n", i, hist[i]);
 
         mNnDoing = true;
-        nn_out = (img_classify_out_t *)process_network(mNn_qcontext, (unsigned char *)mAipq_Buf.fd_ptr);
+        nn_out = (img_classify_out_t *)process_network(mNn_qcontext, (unsigned char *)mAipq_Buf.fd_ptr, false, NULL);
         {
             std::lock_guard<std::mutex> lock(mMutex);
             mBuf_fd_q.pop();
@@ -1150,9 +1259,11 @@ int32_t AipqProcessor::ai_pq_process(int cache_index) {
 
     mNnDoing = true;
     clock_gettime(CLOCK_MONOTONIC, &tm_1);
-
-    nn_out = (img_classify_out_t *)process_network(mNn_qcontext, (unsigned char *)mAipq_Buf.fd_ptr);
-
+    ALOGD_IF(check_D(),"is_secure_source=%d  mNn_qcontext_secure=%p\n", aipq_info->is_secure_source, mNn_qcontext_secure);
+    if (aipq_info->is_secure_source && mIsSupportSecureAipq)
+        nn_out = (img_classify_out_t *)process_network(mNn_qcontext_secure, NULL, true, (unsigned char *)aipq_info->secure_buf_paddr);
+    else if (!aipq_info->is_secure_source)
+        nn_out = (img_classify_out_t *)process_network(mNn_qcontext, (unsigned char *)mAipq_Buf.fd_ptr, false, NULL);
     clock_gettime(CLOCK_MONOTONIC, &tm_2);
     mNnDoing = false;
     if (nn_out == NULL) {
