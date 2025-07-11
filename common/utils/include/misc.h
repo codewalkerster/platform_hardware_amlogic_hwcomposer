@@ -38,6 +38,7 @@ bool sys_set_valid_mode(const char* path, const char* outputmode);
 int32_t sys_get_string_prop(const char* prop, char * val);
 int32_t sys_get_string_prop_default(const char* prop, char * val, char *defVal);
 int32_t sys_set_prop(const char *prop, const char *val);
+bool is_odroid_board();
 
 int32_t sysfs_get_int(const char* path, int32_t def);
 int32_t sysfs_get_string(const char* path, char *str, int32_t len);

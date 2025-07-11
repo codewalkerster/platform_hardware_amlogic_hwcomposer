@@ -151,6 +151,12 @@ int32_t sysfs_get_int(const char* path, int32_t def) {
     return val;
 }
 
+bool is_odroid_board() {
+    char target_board[PROPERTY_VALUE_MAX] = {0};
+    sys_get_string_prop("ro.product.board", target_board);
+    return !strncmp(target_board, "odroidc5", strlen("odroidc5"));
+}
+
 native_handle_t * gralloc_alloc_dma_buf(
     int w, int h, int format, bool bScanout, bool afbc, int type) {
     static GraphicBufferAllocator & allocService = GraphicBufferAllocator::get();
