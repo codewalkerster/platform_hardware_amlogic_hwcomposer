@@ -1849,6 +1849,7 @@ hwc2_error_t Hwc2Display::setActiveConfig(hwc2_config_t config) {
 
 hwc2_error_t Hwc2Display::setPerferredMode(std::string mode) {
     if (mModeMgr != NULL) {
+        std::lock_guard<std::mutex> lock(mConfigMutex);
         int ret = mModeMgr->setPerferredMode(mode);
         if (mConnector && mConnector->supportVrr()) {
             mObserver->onHotplug(true);
