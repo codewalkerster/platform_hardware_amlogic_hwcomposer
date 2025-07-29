@@ -2954,11 +2954,21 @@ void ModePolicy::getSupportedModes() {
     mModes.clear();
     if (mConnector->isConnected()) {
         mConnector->getModes(connecterModeList);
+        auto it = connecterModeList.begin();
+        const auto endIt = connecterModeList.end();
 
-        for (auto it = connecterModeList.begin(); it != connecterModeList.end(); it++) {
-            // All modes are supported
-            if (isModeSupported(it->second)) {
+        if (is_odroid_board()) {
+            while (it != endIt) {
                 mModes.emplace(mModes.size(), it->second);
+                it++;
+            }
+        } else {
+            while (it != endIt) {
+                // All modes are supported
+                if (isModeSupported(it->second)) {
+                    mModes.emplace(mModes.size(), it->second);
+                }
+                it++;
             }
         }
     }

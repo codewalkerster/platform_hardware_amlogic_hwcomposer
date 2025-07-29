@@ -629,6 +629,9 @@ bool RealModeMgr::isSupportModeForCurrentDevice(drm_mode_info_t mode) {
     bool ret = false;
     uint32_t i;
 
+    if (!strcmp(mode.name, "INVALID"))
+        return ret;
+
     if(is_odroid_board())
         return true;
 
