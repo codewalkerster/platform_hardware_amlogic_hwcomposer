@@ -335,7 +335,7 @@ int AipqProcessor::getTeeBufferData()
     TEEC_Context ctx;
     TEEC_Session sess;
     TEEC_Operation op;
-    TEEC_UUID uuid = ADLA_PTA_UUID;
+    TEEC_UUID uuid = TA_ADLA_UUID;
     uint32_t err_origin;
 
     /* Initialize a context connecting us to the TEE */
@@ -357,11 +357,11 @@ int AipqProcessor::getTeeBufferData()
     memset(&op, 0, sizeof(op));
 
     /******************************************************************/
-    ALOGD_IF(mLogLevel > 1, "Invoke ADLA_CMD_GET_AIPQ_RAM \n");
+    ALOGD_IF(mLogLevel > 1, "Invoke TA_GE2D_CMD_GET_RAM \n");
     op.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_OUTPUT, TEEC_NONE,
                      TEEC_NONE, TEEC_NONE);
 
-    res = TEEC_InvokeCommand(&sess, ADLA_CMD_GET_AIPQ_RAM, &op,
+    res = TEEC_InvokeCommand(&sess, TA_GE2D_CMD_GET_RAM, &op,
                  &err_origin);
     if (res != TEEC_SUCCESS) {
         ALOGD("%s: TEEC_InvokeCommand failed with code 0x%x origin 0x%x",
@@ -373,7 +373,7 @@ int AipqProcessor::getTeeBufferData()
     mSecureBufPaddr = op.params[0].value.a;
     mSecureBufSize = op.params[0].value.b;
 
-    ALOGD_IF(mLogLevel > 1, "ADLA_CMD_GET_AIPQ_RAM done, aipq_buf_paddr %" PRIx64 " aipq_buf_size %x\n",
+    ALOGD_IF(mLogLevel > 1, "TA_GE2D_CMD_GET_RAM done, aipq_buf_paddr %" PRIx64 " aipq_buf_size %x\n",
         mSecureBufPaddr, mSecureBufSize);
     /******************************************************************/
 

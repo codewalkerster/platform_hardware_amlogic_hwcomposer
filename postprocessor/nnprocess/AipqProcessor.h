@@ -17,9 +17,9 @@
 #include <UvmDev.h>
 #include "pq_sdk.h"
 
-#define ADLA_PTA_UUID { 0x777050be, 0xb5f8, 0x4c06, \
-                  { 0x81, 0xca, 0x52, 0x3a, 0xb2, 0x02, 0xa3, 0x8a } }
-#define ADLA_CMD_GET_AIPQ_RAM   2
+#define TA_ADLA_UUID { 0x5dc33b6a, 0x216d, 0x4641, \
+	{ 0xa8, 0x34, 0xb3, 0xf3, 0xaa, 0x1a, 0xcc, 0xb8 } }
+#define TA_GE2D_CMD_GET_RAM (0x10 + 4)
 
 #define NN_INPUT_FRAME_WIDTH_DEFAULT    224
 #define NN_INPUT_FRAME_HEIGHT_DEFAULT   224
